@@ -1,10 +1,4 @@
-'''
-Created on Nov 12, 2012
-
-@author: Will
-'''
-
-from util import SourceArticles, cosine, gen_phrases
+from util import SourceArticles, cosine
 import random
 
 source_articles = SourceArticles()

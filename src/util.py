@@ -1,6 +1,6 @@
 '''
 Requires the following package:
-https://github.com/martinblech/xmltodict
+    https://github.com/martinblech/xmltodict
 '''
 
 import collections
@@ -9,7 +9,6 @@ import re
 import string
 import random
 import xmltodict
-import codecs
 
 
 DATA_PATH = "../data/data.xml"
@@ -24,40 +23,43 @@ class SourceArticles():
 
     @property
     def count(self):
-        return len(self.data['database']['table'])
+        return len(self.articles)
 
     def __init__(self):
-        self.data = xmltodict.parse(open(DATA_PATH, 'r'))
-        non_empties = []
-        for article_num, article in enumerate(self.data['database']['table']):
-            for column in article['column'][0:4]:
-                if not '#text' in column:
-                    break
-            else: #else clause only executed if we didn't break out
-                non_empties.append(article_num)
-
-        self.data['database']['table'] = [article for (article_num, article) in enumerate(self.data['database']['table']) if article_num in non_empties]
-
+        data = xmltodict.parse(open(DATA_PATH, 'r'))
+        self.articles = []
+        for article in data['database']['table']:
+            # Only include article if it has text in the article
+            if article['column'][3].get('#text', 'null').lower() != 'null':
+                self.articles.append(article)
 
     def get_id(self, num):
-        return self.data['database']['table'][num]['column'][0]['#text'].encode('utf-8')
+        return self.articles[num]['column'][0].get('#text', 'null').encode('utf-8')
 
     def get_keywords(self, num):
-        return self.data['database']['table'][num]['column'][1]['#text'].encode('utf-8')
+        return self.articles[num]['column'][1].get('#text', 'null').encode('utf-8')
 
     def get_title(self, num):
-        return self.data['database']['table'][num]['column'][2]['#text'].encode('utf-8')
+        return self.articles[num]['column'][2].get('#text', 'null').encode('utf-8')
 
     def get_article(self, num):
-        return self.data['database']['table'][num]['column'][3]['#text'].encode('utf-8')
+        return self.articles[num]['column'][3]['#text'].encode('utf-8')
+        
+    def _gen_phrases(self, s):
+        exclude = set(string.punctuation) - set([' ', '|', '{', '}'])
+        s = ''.join(ch for ch in s.lower() if ch not in exclude)
+        crude_split = re.split("\{(.+?)\}", s)
+        return [x.split("|") for x in crude_split if x.strip() != ""]
 
-    # returns list of n spun articles; articles produced will have lowest cos similarity
-    # note : lowest cos similarity is not guranteed. Rather we use the heuristic of choosing
-    # a different entry from each spin group with the assumption that it will lead to some of the lowest
-    # cos similarity
     def spin_articles(self, num, n=1):
+        '''
+        Returns list of n spun articles; articles produced will try to have
+        lowest cos similarity; we use the heuristic of choosing a different 
+        entry from each spin group with the assumption that it will lead to 
+        some of the lowest cos similarity
+        '''
         s = self.get_article(num)
-        phrases = gen_phrases(s)
+        phrases = self._gen_phrases(s)
 
         articles = []
         for i in range(n):
@@ -75,21 +77,21 @@ class SourceArticles():
 
     def get_stats(self, num):
         '''
-        Return
+        Returns
         Number of spin groups in article
         Number of spin group elements
         Number of possible articles from each source article
         '''
         s = self.get_article(num)
         #s = "I {like|love|adore} all {animals|dogs|birds}. Nothing else {is cool|makes me happy}"
-        phrases = gen_phrases(s)
+        phrases = self._gen_phrases(s)
         num_spin_groups = 0
         num_articles = 1
         total_spin_elements = 0
 
         for phrase in phrases:
+            # phrase is a spin group, and not constant phrase
             if len(phrase) > 1:
-                # phrase is a spin group, and not constant phrase
                 num_spin_groups += 1
                 num_articles *= len(phrase)
                 total_spin_elements += len(phrase)
@@ -97,13 +99,6 @@ class SourceArticles():
         return num_spin_groups, total_spin_elements, num_articles
 
 
-def gen_phrases(s):
-            exclude = set(string.punctuation) - set([' ', '|', '{', '}'])
-            s = ''.join(ch for ch in s.lower() if ch not in exclude)
-
-            crude_split = re.split("\{(.+?)\}", s)
-
-            return [x.split("|") for x in crude_split if x.strip() != ""]
 
 def cosine(a, b):
     def dot(a, b):
@@ -127,7 +122,7 @@ def cosine(a, b):
 if __name__ == "__main__":
     articles = SourceArticles()
 
-    article_num = 5
+    article_num = 0
 
     print "{0} TOTAL ARTICLES\n".format(articles.count)
 
