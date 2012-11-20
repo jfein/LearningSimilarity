@@ -55,7 +55,7 @@ def baseline_average_cos_all(num_times, num_articles=source_articles.count, equa
         highest_overall = max(highest_overall, highest_for_this)
 
         if average_for_this > .9:
-            print "WARNING : average for article num {0}, id {1}, was {2}".format(article_num, source_articles.get_id(article_num), average_for_this)
+            print "WARNING : average for article num {0}, id {1}, was {2}".format(article_num, article_num, average_for_this)
         if average_for_this < lowest_average[0]:
             lowest_average = (average_for_this, article_num)
 
@@ -166,7 +166,8 @@ def baseline_cosine_keywords(num_times):
         a1_keywords = source_articles.get_keywords(a1_num)
         a2_num = -1
         for num in xrange(a1_num + 1, num_articles):
-            if a1_keywords == source_articles.get_keywords(num):
+            #if a1_keywords == source_articles.get_keywords(num):
+            if num in source_articles.get_similar_articles(a1_num):
                 a2_num = num
                 break
         else:
@@ -193,8 +194,8 @@ def baseline_cosine_keywords(num_times):
 
 
 
-#baseline_cosine_keywords(100)
-baseline_average_cos_all(25, equal_prob=False)
+baseline_cosine_keywords(100)
+#baseline_average_cos_all(25, equal_prob=False)
 
 #baseline_cos_different(1000, 100)
 
