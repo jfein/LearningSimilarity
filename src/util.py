@@ -120,7 +120,7 @@ class SourceArticles():
         '''
         return self.articles[num]['article']
 
-    def get_article_sentences(self, num):
+    def get_article_sentences(self, num, article_body=None):
         '''
         Return article_num as a list of sentences. 
         Each sentence is represented as a list of spin groups. 
@@ -139,7 +139,8 @@ class SourceArticles():
         to SourceArticles on construction.
         '''
 
-        article_body = self.articles[num]['article']
+        if not article_body:
+            article_body = self.articles[num]['article']
         sentences = sent_tokenize(article_body)
 
         parsed_sentences = []
@@ -148,14 +149,10 @@ class SourceArticles():
             spin_groups = gen_phrases(sentence)
 
             parsed_spin_groups = []
-            if num == 4:
-                print sentence
-                print 't', spin_groups
+
             for spin_group in spin_groups:
                 parsed_spin_group = []
 
-                if num == 4:
-                    print '\t', spin_group
                 for phrase in spin_group:
                     parsed_spin_group.append(tuple(x.strip() for x in phrase.split()))
 
