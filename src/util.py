@@ -11,11 +11,11 @@ import string
 import random
 import xmltodict
 from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet
+from nltk.corpus import wordnet, stopwords
 
 
 DATA_PATH = "../data/data.xml"
-STOP_WORDS = nltk.corpus.stopwords.words("english")
+STOP_WORDS = stopwords.words("english")
 
 
 class SourceArticles():
