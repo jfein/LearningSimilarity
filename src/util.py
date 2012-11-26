@@ -10,7 +10,7 @@ import re
 import string
 import random
 import xmltodict
-from nltk.stem import WordNetLemmatizer
+from nltk.stem import WordNetLemmatizer, PorterStemmer
 from nltk.corpus import wordnet, stopwords
 from nltk.tokenize import sent_tokenize
 
@@ -18,6 +18,7 @@ from nltk.tokenize import sent_tokenize
 DATA_PATH = "../data/data.xml"
 STOP_WORDS = stopwords.words("english")
 
+WORD_NET_LEMMATIZER, PORTER_STEMMER = range(2)
 
 class SourceArticles():
 
@@ -27,11 +28,18 @@ class SourceArticles():
 
     def __init__(
             self,
-            stdize_kws=True
+            stdize_kws=True,
+            stdize_body=False,
+            stemmer=WORD_NET_LEMMATIZER,
+            include_nested=False,
+            omit_stopwords=False,
         ):
 
-        self.stemmer = WordNetLemmatizer()
-
+        #TODO omit_stopwords only omits them in get_article_sentences
+        # not spin_article
+        self.setup_stemmer(stemmer)
+        self.omit_stopwords = omit_stopwords
+        self.stdize_body = stdize_body
         data = xmltodict.parse(open(DATA_PATH, 'r'))
 
         self.articles = []
@@ -41,7 +49,7 @@ class SourceArticles():
         cur_id = 0
         for article in data['database']['table']:
             article_body = article['column'][3].get('#text', 'null').encode('utf-8')
-            if article_body.lower() != 'null' and not self.is_nested(article_body):
+            if article_body.lower() != 'null' and (include_nested or not is_nested(article_body)):
                 # Make a simple dict for the article's data
                 article_dict = {'article' : article_body}
 
@@ -54,7 +62,6 @@ class SourceArticles():
                 kws = kws if kws.lower() != "null" else ""
                 article_dict['keywords'] = self.format_kws(kws, stdize_kws)
 
-
                 # Store keyword associations
                 for word in article_dict['keywords']:
                     if word not in self.keywords:
@@ -64,6 +71,15 @@ class SourceArticles():
                 # Append article
                 self.articles.append(article_dict)
                 cur_id += 1
+
+    def setup_stemmer(self, stemmer):
+        if stemmer == WORD_NET_LEMMATIZER:
+            self.stdize_word = WordNetLemmatizer().lemmatize
+        elif stemmer == PORTER_STEMMER:
+            self.stdize_word = PorterStemmer().stem
+        else:
+            # Default to Wordnet Lemmatizer
+            self.stdize_word = WordNetLemmatizer().lemmatize
 
     def format_kws(self, text, stdize_kws):
         '''
@@ -85,23 +101,6 @@ class SourceArticles():
                     words.add(word)
         return words
 
-    def stdize_word(self, word):
-        return self.stemmer.lemmatize(word)
-
-    def is_nested(self, text):
-        '''
-        Returns true if text has a spin group within a spin group
-        '''
-        cnt = 0
-        for ch in text:
-            if ch == "{":
-                cnt += 1
-            if ch == "}":
-                cnt -= 1
-            if cnt > 1:
-                return True
-        return False
-
     def get_keywords(self, num):
         '''
         Returns the set of article num's keywords
@@ -119,6 +118,36 @@ class SourceArticles():
         Returns article num's article body
         '''
         return self.articles[num]['article']
+
+    def spin_article_sentences(self, num, article_body=None):
+        '''
+         Returns list of n spun articles; articles produced will try to have
+        lowest cos similarity; we use the heuristic of choosing a different 
+        entry from each spin group with the assumption that it will lead to 
+        some of the lowest cos similarity
+        
+        Spun articles are represented as a list of spun sentences. A spun
+        sentence is simply a string.
+        
+        So if article is "I {like|love} the {dog|canine}. He {likes|loves} the {cat|feline}"
+        and n = 2, a possible result would be
+        
+        [["I like the canine", "He likes the cat"], ["I love the dog", "He loves the feline"]]
+        '''
+        article_sentences = self.get_article_sentences(num, article_body)
+
+        # List of spun articles. Each spun article is a list of spun sentences
+
+        spun_sentences = []
+        for sentence in article_sentences:
+            spun_sentence = []
+            for spin_group in sentence:
+                spin_group = list(spin_group)
+                phrase = " ".join(random.choice(spin_group))
+                spun_sentence.append(phrase.strip())
+            spun_sentences.append(" ".join(spun_sentence))
+
+        return spun_sentences
 
     def get_article_sentences(self, num, article_body=None):
         '''
@@ -138,27 +167,51 @@ class SourceArticles():
         The words are standardized based on options passed
         to SourceArticles on construction.
         '''
-
         if not article_body:
-            article_body = self.articles[num]['article']
-        sentences = sent_tokenize(article_body)
+            if 'article_sentences' in self.articles[num]:
+                return self.articles[num]['article_sentences']
 
+            # Use this flag since we can't use 'if not article_body' at the end
+            # to determine whether to store results in the cache since
+            # we're about to assign something to article_body
+            store_in_cache = True
+            article_body = self.articles[num]['article']
+        else:
+            article_body = article_body.lower()
+
+        sentences = sent_tokenize(article_body)
         parsed_sentences = []
 
         for sentence in sentences:
             spin_groups = gen_phrases(sentence)
 
-            parsed_spin_groups = []
+            if is_nested(sentence):
+                continue
 
+            parsed_spin_groups = []
             for spin_group in spin_groups:
                 parsed_spin_group = []
 
                 for phrase in spin_group:
-                    parsed_spin_group.append(tuple(x.strip() for x in phrase.split()))
+                    if self.stdize_body:
+                        words = (self.stdize_word(x.strip()) for x in phrase.split())
+                    else:
+                        words = (x.strip() for x in phrase.split())
 
-                parsed_spin_groups.append(frozenset(parsed_spin_group))
+                    words_tuple = tuple(word for word in words if (not self.omit_stopwords or word not in STOP_WORDS))
+
+                    #Words tuple may be empty if it's just stopwords
+                    if words_tuple:
+                        parsed_spin_group.append(words_tuple)
+
+                # Parsed spin group may be empty if we're omitting stopwords. Only add it if it is nonempty
+                if parsed_spin_group:
+                    parsed_spin_groups.append(frozenset(parsed_spin_group))
 
             parsed_sentences.append(parsed_spin_groups)
+
+        if store_in_cache:
+            self.articles[num]['article_sentences'] = parsed_sentences
 
         return parsed_sentences
 
@@ -183,6 +236,12 @@ class SourceArticles():
         some of the lowest cos similarity
         '''
         s = self.get_article(num)
+
+        # TODO Probably should do something else if 
+        # the article is nested
+        if is_nested(s):
+            print "WARNING: article {0} is nested. Spin articles will probably return something messed up".format(num)
+
         phrases = gen_phrases(s)
 
         articles = []
@@ -199,27 +258,36 @@ class SourceArticles():
 
         return articles
 
-    def get_stats(self, num):
-        '''
-        Returns
-        Number of spin groups in article
-        Number of spin group elements
-        Number of possible articles from each source article
-        '''
-        s = self.get_article(num)
-        phrases = self.gen_phrases(s)
-        num_spin_groups = 0
-        num_articles = 1
-        total_spin_elements = 0
+    def get_phrase_size_stats(self):
+        max_phrase_size, max_group = 0, None
+        counts = {}
+        total = 0.0
+        for num in xrange(self.count):
+            for spin_group in gen_phrases(self.articles[num]['article']):
+                for phrase in spin_group:
+                    phrase_size = len(phrase.split())
+                    if phrase_size == 0:
+                        continue
+                    counts[phrase_size] = counts.get(phrase_size, 0) + 1
+                    total += 1
+                    if phrase_size > max_phrase_size:
+                        max_phrase_size, max_phrase = phrase_size, phrase
 
-        for phrase in phrases:
-            # phrase is a spin group, and not constant phrase
-            if len(phrase) > 1:
-                num_spin_groups += 1
-                num_articles *= len(phrase)
-                total_spin_elements += len(phrase)
+        print "Max phrase size : ", max_phrase_size
+        print max_phrase
+        print ""
+        for k, v in counts.iteritems():
+            print "{0} : {1}".format(k, v)
 
-        return num_spin_groups, total_spin_elements, num_articles
+        for k, v in counts.iteritems():
+            print "{0} : {1}".format(k, v / total)
+
+        cumulative = 0.0
+
+        for k, v in counts.iteritems():
+            cumulative += v / total
+            print "{0} : {1}".format(k, cumulative)
+
 
 
 def cosine(a, b):
@@ -242,14 +310,34 @@ def gen_phrases(s):
     '''
     Makes a set of phrases
     '''
-    exclude = set(string.punctuation) - set([' ', '|', '{', '}'])
+
+    exclude = set(string.punctuation) - set([' ', '|', '{', '}', '\''])
     s = ''.join(ch for ch in s.lower() if ch not in exclude)
     crude_split = re.split("\{(.+?)\}|(\w+)", s)
-    return [x.split("|") for x in crude_split if x and x.strip() != ""]
+
+    return [ k for k in [ [w for w in x.split("|") if w] for x in crude_split if (x and x.strip()) ] if k ]
+
+
+def is_nested(text):
+    '''
+    Returns true if text has a spin group within a spin group
+    '''
+    cnt = 0
+    for ch in text:
+        if ch == "{":
+            cnt += 1
+        if ch == "}":
+            cnt -= 1
+        if cnt > 1:
+            return True
+    return False
+
 
 
 if __name__ == "__main__":
-    articles = SourceArticles()
+    articles = SourceArticles(omit_stopwords=True, stdize_body=True, stemmer=PORTER_STEMMER)
+
+    print articles.spin_article_sentences(1, article_body="I {like|love} the {dog|canine}. He {likes|loves} the {cat|feline}.")
 
     # Print all keywords
     for i in range(articles.count):
@@ -284,14 +372,5 @@ if __name__ == "__main__":
     print "Cosine Similarity: {0}".format(cosine(a1, a2))
 
     print "\n\n\nTesting Get Article Sentences\n\n"
-
-
-
-    for article_num in xrange(5):
-        print '\n\nArticle num', article_num
-        sentences = articles.get_article_sentences(article_num)
-
-        for sentence in sentences:
-            print sentence
 
 
