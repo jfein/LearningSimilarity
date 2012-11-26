@@ -1,16 +1,12 @@
 import re
 import string
+from util import gen_phrases
  
-text = "test text is {very {good|bad}|{good|bad}} at its job"
+ 
+text = "test text is {very {good|bad} stuff|{good|bad}|great} at its job"
 desired_text = "test text is {very good|very bad|good|bad} at its job"
 
-def gen_phrases(s):
-    exclude = set(string.punctuation) - set([' ', '|', '{', '}'])
-    s = ''.join(ch for ch in s.lower() if ch not in exclude)
-    crude_split = re.split("\{(.+?)\}", s)
-    return [x.split("|") for x in crude_split if x.strip() != ""]
-    
-    
+
 count = 0
 in_spin_group = False
 spin_start = -1
