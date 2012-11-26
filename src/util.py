@@ -12,6 +12,7 @@ import random
 import xmltodict
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet, stopwords
+from nltk.tokenize import sent_tokenize
 
 
 DATA_PATH = "../data/data.xml"
@@ -25,14 +26,14 @@ class SourceArticles():
         return len(self.articles)
 
     def __init__(
-            self, 
+            self,
             stdize_kws=True
         ):
-        
+
         self.stemmer = WordNetLemmatizer()
-    
+
         data = xmltodict.parse(open(DATA_PATH, 'r'))
-        
+
         self.articles = []
         self.keywords = {}
 
@@ -43,34 +44,34 @@ class SourceArticles():
             if article_body.lower() != 'null' and not self.is_nested(article_body):
                 # Make a simple dict for the article's data
                 article_dict = {'article' : article_body}
-                
+
                 # Add in title info
                 t = article['column'][2].get('#text', "").encode('utf-8')
                 article_dict['title'] = t if t.lower() != "null" else ""
-                
+
                 # Add in keyword info
                 kws = article['column'][1].get('#text', "").encode('utf-8')
                 kws = kws if kws.lower() != "null" else ""
                 article_dict['keywords'] = self.format_kws(kws, stdize_kws)
-                    
-                
+
+
                 # Store keyword associations
                 for word in article_dict['keywords']:
                     if word not in self.keywords:
                         self.keywords[word] = set()
                     self.keywords[word].add(cur_id)
-                
+
                 # Append article
-                self.articles.append(article_dict)                
+                self.articles.append(article_dict)
                 cur_id += 1
-            
+
     def format_kws(self, text, stdize_kws):
         '''
         Turns a text into a set of standard lemmatized words
         Words returned ONLY if alphabetic, more than 2 chars, and not stop word
         '''
         words = set()
-        
+
         # Format text
         text = text.lower().replace("|", " ").replace(",", " ").replace("{", "").replace("}", "")
 
@@ -83,17 +84,17 @@ class SourceArticles():
                 if word not in STOP_WORDS and len(word) > 2:
                     words.add(word)
         return words
-        
+
     def stdize_word(self, word):
         return self.stemmer.lemmatize(word)
-        
+
     def is_nested(self, text):
         '''
         Returns true if text has a spin group within a spin group
         '''
         cnt = 0
         for ch in text:
-            if ch == "{": 
+            if ch == "{":
                 cnt += 1
             if ch == "}":
                 cnt -= 1
@@ -118,7 +119,52 @@ class SourceArticles():
         Returns article num's article body
         '''
         return self.articles[num]['article']
+
+    def get_article_sentences(self, num):
+        '''
+        Return article_num as a list of sentences. 
+        Each sentence is represented as a list of spin groups. 
+        Each spin group is represented as a frozenset of phrases
+        Each phrase is represented as a tuple of words.
         
+        So returns a set of list of list of sets of lists
+        I {like|love} dogs. {They are|one is} great.
+        
+        [
+        [Set([I]), SET([like], [love]), Set([dogs])],
+        [Set([they, are], [one, is]), Set([great])]
+        ]
+        
+        The words are standardized based on options passed
+        to SourceArticles on construction.
+        '''
+
+        article_body = self.articles[num]['article']
+        sentences = sent_tokenize(article_body)
+
+        parsed_sentences = []
+
+        for sentence in sentences:
+            spin_groups = gen_phrases(sentence)
+
+            parsed_spin_groups = []
+            if num == 4:
+                print sentence
+                print 't', spin_groups
+            for spin_group in spin_groups:
+                parsed_spin_group = []
+
+                if num == 4:
+                    print '\t', spin_group
+                for phrase in spin_group:
+                    parsed_spin_group.append(tuple(x.strip() for x in phrase.split()))
+
+                parsed_spin_groups.append(frozenset(parsed_spin_group))
+
+            parsed_sentences.append(parsed_spin_groups)
+
+        return parsed_sentences
+
     def get_similar_articles(self, num):
         '''
         Returns a list of articles with at least 1
@@ -131,16 +177,7 @@ class SourceArticles():
         if num in similar_articles:
             similar_articles.remove(num)
         return similar_articles
-        
-    def gen_phrases(self, s):
-        '''
-        Makes a set of phrases
-        '''
-        exclude = set(string.punctuation) - set([' ', '|', '{', '}'])
-        s = ''.join(ch for ch in s.lower() if ch not in exclude)
-        crude_split = re.split("\{(.+?)\}", s)
-        return [x.split("|") for x in crude_split if x.strip() != ""]
-        
+
     def spin_articles(self, num, n=1):
         '''
         Returns list of n spun articles; articles produced will try to have
@@ -149,7 +186,7 @@ class SourceArticles():
         some of the lowest cos similarity
         '''
         s = self.get_article(num)
-        phrases = self.gen_phrases(s)
+        phrases = gen_phrases(s)
 
         articles = []
         for i in range(n):
@@ -204,11 +241,19 @@ def cosine(a, b):
     return sim(aa, bb)
 
 
+def gen_phrases(s):
+    '''
+    Makes a set of phrases
+    '''
+    exclude = set(string.punctuation) - set([' ', '|', '{', '}'])
+    s = ''.join(ch for ch in s.lower() if ch not in exclude)
+    crude_split = re.split("\{(.+?)\}|(\w+)", s)
+    return [x.split("|") for x in crude_split if x and x.strip() != ""]
 
 
 if __name__ == "__main__":
     articles = SourceArticles()
-    
+
     # Print all keywords
     for i in range(articles.count):
         print "ARTICLE {0}".format(i)
@@ -219,16 +264,16 @@ if __name__ == "__main__":
     for keyword, nums in articles.keywords.iteritems():
         if len(nums) > 1:
             print "{0}\n\tARTICLES: {1}".format(keyword, nums)
-    
+
     print "----------------------------------------------------"
     print "{0} TOTAL ARTICLES\n".format(articles.count)
-    
+
     print articles.get_similar_articles(313)
 
     print "----------------------------------------------------"
-    
+
     article_num = 0
-    
+
     print "SOURCE TITLE:\n{0}\n".format(articles.get_title(article_num))
     print "SOURCE ARTICLE:\n{0}\n".format(articles.get_article(article_num))
 
@@ -240,3 +285,16 @@ if __name__ == "__main__":
     print "ARTICLE 2:\n{0}\n".format(a2)
 
     print "Cosine Similarity: {0}".format(cosine(a1, a2))
+
+    print "\n\n\nTesting Get Article Sentences\n\n"
+
+
+
+    for article_num in xrange(5):
+        print '\n\nArticle num', article_num
+        sentences = articles.get_article_sentences(article_num)
+
+        for sentence in sentences:
+            print sentence
+
+
