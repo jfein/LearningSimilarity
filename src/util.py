@@ -151,6 +151,35 @@ class SourceArticles():
 
         return spun_sentences
 
+    def spin_dissimilar_article_sentences(self, num, n=1, article_body=None):
+        '''
+        spin_article_sentences but with the n parameter
+        '''
+        article_sentences = self.get_article_sentences(num, article_body)
+        article_sentences_cpy = []
+        for sentence in article_sentences:
+            sentence_cpy = []
+            for spin_group in sentence:
+                sentence_cpy.append(list(spin_group))
+            article_sentences_cpy.append(sentence_cpy)
+
+        article_sentences = article_sentences_cpy
+
+        spun_articles = []
+        for _ in xrange(n):
+            spun_sentences = []
+            for sentence in article_sentences:
+                spun_sentence = []
+                for spin_group in sentence:
+                    phrase = random.choice(spin_group)
+                    spun_sentence.append(" ".join(phrase).strip())
+                    if len(spin_group) > 1:
+                        spin_group.remove(phrase)
+                spun_sentences.append(" ".join(spun_sentence))
+            spun_articles.append(spun_sentences)
+
+        return spun_articles
+
     def get_article_sentences(self, num, article_body=None):
         '''
         Return article_num as a list of sentences. 
@@ -235,6 +264,24 @@ class SourceArticles():
             similar_articles.remove(num)
         return similar_articles
 
+    def get_very_similar_articles(self, num):
+        kws = self.get_keywords(num)
+        if not kws:
+            return set()
+
+        similar_articles = None
+        for kw in kws:
+            if not similar_articles:
+                similar_articles = self.keywords.get(kw, set())
+            else:
+                similar_articles.intersection_update(self.keywords.get(kw, set()))
+
+        if num in similar_articles:
+            similar_articles.remove(num)
+
+        return similar_articles
+
+
     def spin_articles(self, num, n=1):
         '''
         Returns list of n spun articles; articles produced will try to have
@@ -270,16 +317,19 @@ class SourceArticles():
         max_phrase_size, max_group = 0, None
         counts = {}
         total = 0.0
+        seen_phrases = set()
         for num in xrange(self.count):
-            for spin_group in gen_phrases(self.articles[num]['article']):
-                for phrase in spin_group:
-                    phrase_size = len(phrase.split())
-                    if phrase_size == 0:
-                        continue
-                    counts[phrase_size] = counts.get(phrase_size, 0) + 1
-                    total += 1
-                    if phrase_size > max_phrase_size:
-                        max_phrase_size, max_phrase = phrase_size, phrase
+            for sentence in self.get_article_sentences(num):
+                for spin_group in sentence:
+                    for phrase in spin_group:
+                        phrase_size = len(phrase)
+                        if phrase_size == 0 or phrase in seen_phrases:
+                            continue
+                        seen_phrases.add(phrase)
+                        counts[phrase_size] = counts.get(phrase_size, 0) + 1
+                        total += 1
+                        if phrase_size > max_phrase_size:
+                            max_phrase_size, max_phrase = phrase_size, phrase
 
         print "Max phrase size : ", max_phrase_size
         print max_phrase
@@ -302,7 +352,7 @@ def cosine(a, b):
     def dot(a, b):
         dot = 0
         for k, v in a.iteritems():
-            if k in b and k not in STOP_WORDS:
+            if k in b:
                 dot += a[k] + b[k]
         return float(dot)
     mag = lambda x : math.sqrt(dot(x, x))
@@ -343,8 +393,9 @@ def is_nested(text):
 
 
 if __name__ == "__main__":
-    articles = SourceArticles(omit_stopwords=False, stdize_body=False, stemmer=PORTER_STEMMER, max_phrase_size=4)
+    articles = SourceArticles(omit_stopwords=False, stdize_body=False, stemmer=PORTER_STEMMER, max_phrase_size=None)
 
+    '''
     print articles.get_article_sentences(1, article_body="I {like|love} the {dog|canine}. {He doesn't care for|He really does not care for|He really doesn't care for} the dog. She {like|love} the dumb dog")
 
     # Print all keywords
@@ -364,15 +415,15 @@ if __name__ == "__main__":
     print articles.get_similar_articles(313)
 
     print "----------------------------------------------------"
-
+    '''
     article_num = 0
 
     print "SOURCE TITLE:\n{0}\n".format(articles.get_title(article_num))
     print "SOURCE ARTICLE:\n{0}\n".format(articles.get_article(article_num))
 
-    a = articles.spin_articles(article_num, 2)
-    a1 = a[0]
-    a2 = a[1]
+    a = articles.spin_dissimilar_article_sentences(article_num, 2)
+    a1 = " ".join(a[0])
+    a2 = " ".join(a[1])
 
     print "ARTICLE 1:\n{0}\n".format(a1)
     print "ARTICLE 2:\n{0}\n".format(a2)
