@@ -337,7 +337,7 @@ def gen_phrases(s):
     Makes a set of phrases
     '''
     # TODO: make sure exclude set is OK
-    exclude = set(string.punctuation) - set([' ', '|', '{', '}', '\''])
+    exclude = set(string.punctuation) - set([' ', '|', '{', '}', '\'', '-'])
     s = ''.join(ch for ch in s.lower() if ch not in exclude)
     crude_split = re.split("\{(.+?)\}|(\w+)", s)
 
