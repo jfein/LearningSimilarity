@@ -4,7 +4,7 @@ Requires the following package:
     http://nltk.org/index.html
 '''
 
-import collections
+from counter import Counter
 import math
 import re
 import string
@@ -325,8 +325,8 @@ def cosine(a, b):
     mag = lambda x : math.sqrt(dot(x, x))
     sim = lambda x, y : dot(x, y) / (mag(x) * mag(y))
 
-    aa = collections.Counter(a.split())
-    bb = collections.Counter(b.split())
+    aa = Counter(a.split())
+    bb = Counter(b.split())
 
     return sim(aa, bb)
 
