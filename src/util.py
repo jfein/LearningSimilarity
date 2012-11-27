@@ -33,7 +33,7 @@ class SourceArticles():
             stemmer=WORD_NET_LEMMATIZER,
             include_nested=False,
             omit_stopwords=False,
-            max_phrase_size=5,
+            max_phrase_size=None,
         ):
 
         #TODO omit_stopwords only omits them in get_article_sentences
@@ -204,7 +204,7 @@ class SourceArticles():
 
                     words_tuple = tuple(word for word in words if (not self.omit_stopwords or word not in STOP_WORDS))
 
-                    if len(words_tuple) > self.max_phrase_size:
+                    if self.max_phrase_size and len(words_tuple) > self.max_phrase_size:
                         # Just discard the whole sentence
                         discard_sentence = True
                     #Words tuple may be empty if it's just stopwords
@@ -342,7 +342,7 @@ def is_nested(text):
 
 
 if __name__ == "__main__":
-    articles = SourceArticles(omit_stopwords=False, stdize_body=False, stemmer=PORTER_STEMMER)
+    articles = SourceArticles(omit_stopwords=False, stdize_body=False, stemmer=PORTER_STEMMER, max_phrase_size=4)
 
     print articles.get_article_sentences(1, article_body="I {like|love} the {dog|canine}. {He doesn't care for|He really does not care for|He really doesn't care for} the dog. She {like|love} the dumb dog")
 
