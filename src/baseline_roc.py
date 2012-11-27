@@ -1,8 +1,8 @@
-from util import SourceArticles, PORTER_STEMMER, cosine
+from util import SourceArticles, cosine
 import random
 
 
-NUM_POSITIVES = NUM_NEGATIVES = 500
+NUM_POSITIVES = NUM_NEGATIVES = 100
 THRESHOLDS = [x / 100.0 for x in xrange(0, 105, 5)]
 
 
@@ -46,7 +46,7 @@ def baseline_roc():
     src_articles = SourceArticles(
             stdize_kws=True,
             stdize_article=False,
-            #stdizer=PORTER_STEMMER,
+            stdizer=SourceArticles.PORTER_STEMMER,
             omit_stopwords=False,
             max_phrase_size=None
         )

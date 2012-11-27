@@ -1,8 +1,8 @@
-from util import SourceArticles, cosine
+from util import SourceArticles
 
 class HMM():
 
-    def __init__(self, ngram, num_articles=10):
+    def __init__(self, ngram, num_articles=None):
         self.ngram = ngram
 
         # Set up the source articles
@@ -13,6 +13,9 @@ class HMM():
             stdize_article=True,
             max_phrase_size=ngram
         )
+        
+        if not num_articles:
+            num_articles = self.src_articles.count
         
         self.spin_groups = [frozenset()]  # List of spin groups (spin group is a set of phrase tuples), indexed by spin group ID
         self.transitions = {}  # Mapping rom spin group ID to dict of spgid to counts
@@ -132,7 +135,7 @@ class HMM():
 
         
 if __name__ == "__main__":
-    hmm = HMM(4)
+    hmm = HMM(4, 10)
     
     for sgid, spin_group in enumerate(hmm.spin_groups):
         print "{0} : {1}".format(sgid, spin_group)
