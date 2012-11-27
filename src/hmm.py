@@ -2,34 +2,36 @@ from util import SourceArticles, cosine, PORTER_STEMMER
 
 class HMM():
 
-    def __init__(self):
+    def __init__(self, ngram):
+        self.ngram = ngram
+    
         # Set up the source articles
-        src_articles = SourceArticles(
+        self.src_articles = SourceArticles(
             stdize_kws=True,
-            stdize_body=False,
+            stdize_body=True,
             stemmer=PORTER_STEMMER,
             include_nested=True,
-            omit_stopwords=False,
-            max_phrase_size=5
+            omit_stopwords=True,
+            max_phrase_size=ngram
         )
         
-        self.spin_groups = []  # List of spin groups (spin group is a set of phrase tuples), indexed by spin group ID
+        self.spin_groups = [frozenset()]  # List of spin groups (spin group is a set of phrase tuples), indexed by spin group ID
+        self.spin_groups_inverse = {frozenset():0}  # Mapping from spin group to spin group ID
         self.transitions = {}  # Mapping rom spin group ID to dict of spgid to counts
-        self.emission = {}     # 
         
-        for article_num in range(1):
-            txt = "{dogs|canines} are fun. I {like|love} {dogs|canines}. I {crave|really crave|need|want} {delicious|tasty} {snacks|dessert|candy}. He {really likes| adores} you. The {dogs|canines} {crave|really crave|need|want} {lots of|a lot of|much} attention. I {like|love} you."
-        
-            sentences = src_articles.get_article_sentences(article_num, txt)
+        for article_num in range(500):
+            sentences = self.src_articles.get_article_sentences(article_num)
 
             for sentence in sentences:                    
                 prev_spgid = None
             
                 for spin_group in sentence:
                     # Get ID for this spin group
-                    if spin_group not in self.spin_groups:
+                    if spin_group not in self.spin_groups_inverse:
                         self.spin_groups.append(spin_group)
-                    sgid = self.spin_groups.index(spin_group)
+                        sgid = len(self.spin_groups) - 1
+                        self.spin_groups_inverse[spin_group] = sgid
+                    sgid = self.spin_groups_inverse[spin_group]
                     
                     # Add the edge from prev_spgid to spgid
                     transition_from_prev = self.transitions.get(prev_spgid, {})
@@ -44,6 +46,9 @@ class HMM():
         '''
         Returns probability that src_sgid will transition to dest_sgid
         '''
+        if src_sgid == 0 or dest_sgid == 0:
+            return 1.0 / len(self.spin_groups)
+        
         edges_from_src = self.transitions.get(src_sgid, {})
         if dest_sgid not in edges_from_src:
             return 0.0
@@ -53,13 +58,16 @@ class HMM():
         '''
         Returns probability that sgid will emit phrase. Phrase is a list of strings.
         '''
+        if sgid == 0:
+            return 1.0
+            
         spin_group = self.spin_groups[sgid]
         if phrase in spin_group:
             return 1.0 / len(spin_group)
         else:
             return 0.0
             
-    def classify_sentence(self, sentence, n=2):
+    def classify_sentence(self, sentence):
         '''
         Returns the most likely sequence of spin groups that could have generated sentence
         n is the number of n-grams to consider
@@ -69,7 +77,7 @@ class HMM():
         for t in range(len(sentence)):
             delta = {}
             for sgid in range(len(self.spin_groups)):
-                for wb in range(n):
+                for wb in range(self.ngram):
                     key = (sgid, wb)
                     
                     # Make sure theres enough words back
@@ -91,14 +99,17 @@ class HMM():
                         prev_delta = deltas[t-1-wb]
                         best_prev_key = None
                         max = 0.0
-                        for (prev_sgid, prev_wb), (prob, prev_key) in prev_delta.iteritems():
-                            value = prob * self.transition_prob(prev_sgid, sgid) * self.emission_prob(sgid, phrase)
-                            if value >= max:
-                                max = value
-                                best_prev_key = (prev_sgid, prev_wb)
-                        assert(best_prev_key)
-                        delta[key] = (max , best_prev_key)
+                        emit_prob = self.emission_prob(sgid, phrase)
+                        if (emit_prob > 0.0):
+                            for (prev_sgid, prev_wb), (prev_prob, prev_key) in prev_delta.iteritems():
+                                value = prev_prob * self.transition_prob(prev_sgid, sgid) * emit_prob
+                                if value > max:
+                                    max = value
+                                    best_prev_key = (prev_sgid, prev_wb)
 
+                        if best_prev_key:
+                            delta[key] = (max , best_prev_key)
+                            
             deltas.append(delta)
                     
         # Find the max in the last delta
@@ -114,6 +125,7 @@ class HMM():
         spin_groups = []
         t = len(sentence)-1
         while t >= 0:
+            print best_key
             spin_groups.append(best_key[0])
             next_best_key = deltas[t][best_key][1]
             next_t = t - best_key[1] - 1
@@ -128,22 +140,31 @@ class HMM():
 
         
 if __name__ == "__main__":
-    hmm = HMM()
+    hmm = HMM(4)
     
     for sgid, spin_group in enumerate(hmm.spin_groups):
         print "{0} : {1}".format(sgid, spin_group)
         
     print "--------------------------------------------------------------------"
     print "--------------------------------------------------------------------"
-    '''
-    for sgid, edge_counts in hmm.transitions.iteritems():
-        print "--------------------------------"
-        print "TRANSITIONS FROM {0}:\n".format(sgid)
-        for k, v in edge_counts.iteritems():
-            print "\t{0} : {1}".format(k, hmm.transition_prob(sgid, k))
-    '''
+
     
-    sentence = ("dogs", "really", "crave", "tasty", "snacks")
+    sentence = tuple(hmm.src_articles.spin_article_sentences(200)[0].split())
+    
+    print len(sentence)
+    print "CLASSIFYING :\n{0}".format(sentence)
+    
+    groups = hmm.classify_sentence(sentence)
+    
+    for group in groups:
+        print hmm.spin_groups[group]
+        
+    print "--------------------------------------------------------------------" 
+ 
+    sentence = tuple(hmm.src_articles.spin_article_sentences(200)[0].split())
+    
+    print len(sentence)
+    print "CLASSIFYING :\n{0}".format(sentence)
     
     groups = hmm.classify_sentence(sentence)
     
