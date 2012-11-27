@@ -123,7 +123,9 @@ class SourceArticles():
 
     def spin_article_sentences(self, num, article_body=None):
         '''
-         Returns list of n spun articles; articles produced will try to have
+        TODO: bring back n parameter
+        
+        Returns list of n spun articles; articles produced will try to have
         lowest cos similarity; we use the heuristic of choosing a different 
         entry from each spin group with the assumption that it will lead to 
         some of the lowest cos similarity
@@ -137,8 +139,6 @@ class SourceArticles():
         [["I like the canine", "He likes the cat"], ["I love the dog", "He loves the feline"]]
         '''
         article_sentences = self.get_article_sentences(num, article_body)
-
-        # List of spun articles. Each spun article is a list of spun sentences
 
         spun_sentences = []
         for sentence in article_sentences:
@@ -248,6 +248,7 @@ class SourceArticles():
         # the article is nested
         if is_nested(s):
             print "WARNING: article {0} is nested. Spin articles will probably return something messed up".format(num)
+            return []
 
         phrases = gen_phrases(s)
 
