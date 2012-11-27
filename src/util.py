@@ -4,12 +4,13 @@ Requires the following package:
     http://nltk.org/index.html
 '''
 
-from counter import Counter
 import math
 import re
 import string
 import random
+import time
 import xmltodict
+from counter import Counter
 from nltk.stem import WordNetLemmatizer, PorterStemmer
 from nltk.corpus import wordnet, stopwords
 from nltk.tokenize import sent_tokenize
@@ -18,10 +19,10 @@ from nltk.tokenize import sent_tokenize
 DATA_PATH = "../data/data.xml"
 STOP_WORDS = stopwords.words("english")
 
-WORD_NET_LEMMATIZER, PORTER_STEMMER = range(2)
-
 
 class SourceArticles():
+    
+    WORD_NET_LEMMATIZER, PORTER_STEMMER = range(2) 
 
     @property
     def count(self):
@@ -30,9 +31,9 @@ class SourceArticles():
     def __init__(
             self,
             stdizer=WORD_NET_LEMMATIZER,
-            omit_stopwords=False,
             stdize_kws=True,
             stdize_article=False,
+            omit_stopwords=False,
             max_phrase_size=None,
         ):
 
@@ -41,9 +42,9 @@ class SourceArticles():
         self.stdize_article = stdize_article
         self.max_phrase_size = max_phrase_size
         
-        if stdizer == WORD_NET_LEMMATIZER:
+        if stdizer == self.WORD_NET_LEMMATIZER:
             self.stdize_word = WordNetLemmatizer().lemmatize
-        elif stdizer == PORTER_STEMMER:
+        elif stdizer == self.PORTER_STEMMER:
             self.stdize_word = PorterStemmer().stem
         
         data = xmltodict.parse(open(DATA_PATH, 'r'))
@@ -362,6 +363,15 @@ def is_nested(text):
     return False
 
 
+def time_function(function_to_time):
+    def timed_function(*args, **kwargs):
+        start = time.time()
+        result = function_to_time(*args, **kwargs)
+        elapsed = time.time() - start
+        print "Function {0} took {1} seconds".format(function_to_time.__name__, elapsed)
+        return result
+        
+    return timed_function
 
 if __name__ == "__main__":
     articles = SourceArticles(            
