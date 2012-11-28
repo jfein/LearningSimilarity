@@ -121,23 +121,27 @@ class HMM():
         self.cluster_counts = {0:0} # Mapping from spin group ID to number of occurances of that spin group
 
         # Second pass through articles to get transition probabilities
-        for article_num in used_articles:
+        for article_num in range(self.src_articles.count):
             for sentence in self.src_articles.get_article_sentences(article_num):
                 prev_cid = None
                 for spin_group in sentence:
-                    sgid = self.spin_groups_inverse[spin_group]
-                    cid = self.sgid_to_cid[sgid]
+                    sgid = self.spin_groups_inverse.get(spin_group)
+                    if sgid:
+                        cid = self.sgid_to_cid[sgid]
 
-                    self.cluster_counts[cid] = self.cluster_counts.get(cid, 0) + 1
+                        self.cluster_counts[cid] = self.cluster_counts.get(cid, 0) + 1
 
-                    # Add the edge from prev_spgid to spgid
-                    transition_from_prev = self.transitions.get(prev_cid, {})
-                    transition_from_prev_to_cur = transition_from_prev.get(cid, 0)
-                    transition_from_prev_to_cur += 1
-                    transition_from_prev[cid] = transition_from_prev_to_cur
-                    self.transitions[prev_cid] = transition_from_prev
+                        # Add the edge from prev_spgid to spgid
+                        if prev_cid != -1:
+                            transition_from_prev = self.transitions.get(prev_cid, {})
+                            transition_from_prev_to_cur = transition_from_prev.get(cid, 0)
+                            transition_from_prev_to_cur += 1
+                            transition_from_prev[cid] = transition_from_prev_to_cur
+                            self.transitions[prev_cid] = transition_from_prev
 
-                    prev_cid = cid
+                        prev_cid = cid
+                    else:
+                        prev_cid = -1
 
         # Store # of spin group occurances and # of unique spin groups
         self.CHe = sum(self.cluster_counts.values())
@@ -309,7 +313,7 @@ if __name__ == "__main__":
              use_clusters=True,
              use_pickled=False,
              pickle_output=False,
-             pickle_filename="hmm-250-clustered.pickle",
+             pickle_filename="test.pickle",
              )
     
     # Want to analyze 1 pair of very similar odd numbered source articles
