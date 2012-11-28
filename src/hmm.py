@@ -122,6 +122,10 @@ class HMM():
 
         # Second pass through articles to get transition probabilities
         for article_num in range(self.src_articles.count):
+            # Only look at even articles
+            if article_num % 2 != 0:
+                pass
+                
             for sentence in self.src_articles.get_article_sentences(article_num):
                 prev_cid = None
                 for spin_group in sentence:
