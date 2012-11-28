@@ -20,8 +20,16 @@ def spin_group_sim(sg1, sg2):
     '''
     return float(len(sg1.intersection(sg2))) / len(sg1.union(sg2))
 
+def sim_group_average(spin_groups, cluster1, cluster2):
+    total = 0.0
 
-def sim_complete_link(cluster1, cluster2):
+    for sg1 in cluster1:
+        for sg2 in cluster2:
+            total+= spin_group_sim(spin_groups[sg1], spin_groups[sg2])
+
+    return total / (len(cluster1) * len(cluster2))
+
+def sim_complete_link(spin_groups, cluster1, cluster2):
     '''
     Returns the similarity of two clusters
     Clusters are lists of spin groups
@@ -41,7 +49,7 @@ def sim_complete_link(cluster1, cluster2):
     sim = 1.0
     for sg1 in cluster1:
         for sg2 in cluster2:
-            sim = min(sim, spin_group_sim(sg1, sg2))
+            sim = min(sim, spin_group_sim(spin_groups[sg1], spin_groups[sg2]))
 
     return sim
 
@@ -61,9 +69,9 @@ def sim_single_link(cluster1, cluster2):
 @time_function
 def improved_hac(spin_groups,
     spin_groups_inverse,
+    inverted_phrase_index,
     stopping_threshold=.75,
     stopping_num_of_groups=None,
-    inverted_phrase_index=None,
     sim_func=sim_complete_link,
     print_out=False):
 
@@ -75,7 +83,8 @@ def improved_hac(spin_groups,
 
     new_spin_groups_inverse = dict(spin_groups_inverse)
     # Originally this is spin_groups
-    clusters = dict((cluster_id, [spin_group]) for (cluster_id, spin_group) in enumerate(spin_groups))
+    clusters = dict((id, [id]) for id in xrange(len(spin_groups)))
+    clusters_inverse = dict((id, id) for id in xrange(len(spin_groups)))
 
     # N heaps. sim_heaps[cid] is a heap keeping track of the
     # similarities between cid and every other cluster
@@ -94,33 +103,19 @@ def improved_hac(spin_groups,
     and each pair requires an insert into a heap of n^2 items
     (So actually n^2 log(n^2) but thats n^2 log(n))
     '''
-    if not inverted_phrase_index:
-        for cid1, cluster1 in clusters.iteritems():
-            sim_heap = []
-            for cid2, cluster2 in clusters.iteritems():
-                if cid1 == cid2:
-                    continue
-
-                sim = sim_func(cluster1, cluster2)
-                entry = [-sim, cid2, True]
-                heapq.heappush(sim_heap, entry)
-                entries_map[cid2].append(entry)
-
-            sim_heaps[cid1] = sim_heap
-    else:
-        for cid1, cluster1 in clusters.iteritems():
-            sim_heap = []
-            sg, = cluster1
-            cids = set([cid1])
-            for phrase in sg:
-                for cid2 in inverted_phrase_index[phrase]:
-                    if cid2 not in cids:
-                        cids.add(cid2)
-                        sim = sim_func(cluster1, clusters[cid2])
-                        entry = [-sim, cid2, True]
-                        heapq.heappush(sim_heap, entry)
-                        entries_map[cid2].append(entry)
-            sim_heaps[cid1] = sim_heap
+    for cid1, cluster1 in clusters.iteritems():
+        sim_heap = []
+        sgid, = cluster1
+        cids = set([cid1])
+        for phrase in spin_groups[sgid]:
+            for cid2 in inverted_phrase_index[phrase]:
+                if cid2 not in cids:
+                    cids.add(cid2)
+                    sim = sim_func(spin_groups, cluster1, clusters[cid2])
+                    entry = [-sim, cid2, True]
+                    heapq.heappush(sim_heap, entry)
+                    entries_map[cid2].append(entry)
+        sim_heaps[cid1] = sim_heap
 
 
 
@@ -162,16 +157,17 @@ def improved_hac(spin_groups,
 
         cid1, cid2 = max_cids
 
-        #print "Merging clusters {cid1} and {cid2} with similarity {max_sim}".format(**locals())
+        # print "Merging clusters {cid1} and {cid2} with similarity {max_sim}".format(**locals())
 
         # First update our clusters map
         clusters[cid1] = clusters[cid1] + clusters[cid2]
 
-        # Now update the new_spin_groups_inverse
-        for spin_group in clusters[cid1]:
-            new_spin_groups_inverse[spin_group] = cid1
 
-        # Now update the similarities
+        # Now update the clusters_inverse
+        for sgid in clusters[cid2]:
+            clusters_inverse[sgid] = cid1
+
+        # Now invalidate the similarities
         for entry in entries_map[cid1]:
             entry[-1] = False
 
@@ -182,29 +178,54 @@ def improved_hac(spin_groups,
         del sim_heaps[cid2]
         del entries_map[cid2]
 
+        # Go through and add entries only to
+        # clusters[cid1] is a list of spin group ids
+
+        already_simmed_cids = set([cid1])
+
+        for sgid in clusters[cid1]:
+            for phrase in spin_groups[sgid]:
+                for sgid in inverted_phrase_index[phrase]:
+                    cid = clusters_inverse[sgid]
+                    if cid in already_simmed_cids:
+                        continue
+                    already_simmed_cids.add(cid)
+                    sim = sim_func(spin_groups, clusters[cid], clusters[cid1])
+
+                    entry1 = [-sim, cid, True]
+                    entries_map[cid].append(entry1)
+                    heapq.heappush(sim_heaps[cid1], entry1)
+        '''
         for cid, cluster in clusters.iteritems():
             if cid == cid1:
                 continue
 
-            sim = sim_func(cluster, clusters[cid1])
+            sim = sim_func(spin_groups, cluster, clusters[cid1])
             # Create two entries. One for sim_heaps[cid]
             # One for sim_heaps[cid1]
 
             entry1 = [-sim, cid, True]
             entries_map[cid].append(entry1)
             heapq.heappush(sim_heaps[cid1], entry1)
-
-            entry2 = [-sim, cid1, True]
-            entries_map[cid1].append(entry2)
-            heapq.heappush(sim_heaps[cid], entry2)
-
+        '''
         if stopping_num_of_groups and len(clusters) <= stopping_num_of_groups:
             break
+
+    # Now we want to build the new spin groups
+    # cid -> sgid
+
+    new_spin_groups = {}
+    for cid in clusters:
+        new_spin_group = set()
+        for sgid in clusters[cid]:
+            for phrase in spin_groups[sgid]:
+                new_spin_group.add(phrase)
+        new_spin_groups[cid] = frozenset(new_spin_group)
 
     if print_out:
         num_one_word_clustered_spin_groups = 0
         for cluster in clusters.values():
-            if len(cluster) == 1 and len(cluster[0]) == 1:
+            if len(cluster) == 1 and len(spin_groups[cluster[0]]) == 1:
                   num_one_word_clustered_spin_groups+= 1
 
 
@@ -215,10 +236,11 @@ def improved_hac(spin_groups,
 
         for cid, cluster in clusters.iteritems():
             print 'Cluster {0}'.format(cid)
-            for sg in cluster:
+            for sgid in cluster:
+                sg = spin_groups[sgid]
                 print '\t', "|".join(" ".join(sg_tuple) for sg_tuple in sg)
 
-    return new_spin_groups_inverse
+    return clusters_inverse, new_spin_groups
 
 
 
@@ -324,7 +346,7 @@ if __name__ == "__main__":
     spin_groups_inverse = dict((sg, id) for (id, sg) in enumerate(spin_groups))
 
     '''
-    hmm = HMM(ngram = 2, num_articles=100)
+    hmm = HMM(ngram = 2, num_articles=75)
     spin_groups = hmm.spin_groups
     spin_groups_inverse = hmm.spin_groups_inverse
     phrase_index = hmm.phrases
@@ -339,58 +361,15 @@ if __name__ == "__main__":
                                print_out=False)
     '''
 
-    improved_hac_inverse = improved_hac(spin_groups,
+    sgid_to_cid, new_spin_groups = improved_hac(spin_groups,
                                spin_groups_inverse,
-                               sim_func=sim_complete_link,
+                               sim_func=sim_group_average,
                                inverted_phrase_index=phrase_index,
                                stopping_threshold=1.0/2.0,
                                print_out=True)
 
-    print "\n================================\n"
-    #shitty_hac_inverse = hac(spin_groups, spin_groups_inverse, stopping_threshold=1.0 / 2.0, print_out=print_out)
-
-    # Now we want to go through and for every cid, if the resulting clusters aren't the same, print out the different
-
-    if compare_clusters:
-        improved_hac_clusters = {}
-        shitty_hac_clusters = {}
-        cids = set()
-
-        for sg, cid in shitty_hac_inverse.iteritems():
-            cids.add(cid)
-            sg = "|".join(" ".join(phrase) for phrase in sg)
-
-            if cid not in shitty_hac_clusters:
-                shitty_hac_clusters[cid] = [sg]
-            else:
-                shitty_hac_clusters[cid].append(sg)
-
-        for sg, cid in improved_hac_inverse.iteritems():
-            sg = "|".join(" ".join(phrase) for phrase in sg)
-            cids.add(cid)
-            if cid not in improved_hac_clusters:
-                improved_hac_clusters[cid] = [sg]
-            else:
-                improved_hac_clusters[cid].append(sg)
-
-        for cid in cids:
-            if cid in shitty_hac_clusters:
-                shitty_cid = sorted(shitty_hac_clusters[cid])
-            else:
-                shitty_cid = []
-
-            if cid in improved_hac_clusters:
-                improved_cid = sorted(improved_hac_clusters[cid])
-            else:
-                improved_cid = []
-
-            if shitty_cid != improved_cid:
-                print '{0} cluster is not equal'.format(cid)
-                print '\tShitty HAC : ', ", ".join(shitty_cid)
-                print '\tImproved HAC : ', ", ".join(improved_cid)
-
-
-
-
+    for new_sgid, new_spin_group in new_spin_groups.iteritems():
+        print "New spin group id {0}".format(new_sgid)
+        print "\t{0}".format("|".join(" ".join(phrase) for phrase in new_spin_group))
 
 
