@@ -1,5 +1,6 @@
 import math
 from util import SourceArticles, cosine, time_function
+from hac import improved_hac
 
 
 def log(x):
@@ -26,32 +27,33 @@ class HMM():
             num_articles = self.src_articles.count
         
         self.spin_groups = [frozenset()]  # List of spin groups (spin group is a set of phrase tuples), indexed by spin group ID
-        self.transitions = {}  # Mapping rom spin group ID to dict of spgid to counts
-        
         self.spin_groups_inverse = {frozenset():0}  # Mapping from spin group to spin group ID
-        
-        # TODO: count of unknown state???
-        self.spin_group_counts = {0:0} # Mapping from spin group ID to number of occurances of that spin group
-        
         self.phrases = {} # Set of all unique phrases
         
+        # First pass through articles to get all unique spin groups
         for article_num in range(num_articles):
-            sentences = self.src_articles.get_article_sentences(article_num)
-
-            for sentence in sentences:                    
-                prev_spgid = None
-            
+            for sentence in self.src_articles.get_article_sentences(article_num):                    
                 for spin_group in sentence:
-                    # Get ID for this spin group
                     if spin_group not in self.spin_groups_inverse:
+                        sgid = len(self.spin_groups)
                         self.spin_groups.append(spin_group)
-                        sgid = len(self.spin_groups) - 1
                         self.spin_groups_inverse[spin_group] = sgid
                         # Map phrases in this spin group to this spin group ID
                         for phrase in spin_group:
                             if phrase not in self.phrases:
                                 self.phrases[phrase] = []
-                            self.phrases[phrase].append(sgid)                      
+                            self.phrases[phrase].append(sgid)
+                            
+        #self.sgid_to_cid , self.clusters = improved_hac(self.spin_groups, self.spin_groups_inverse, self.phrases)
+                            
+        self.transitions = {}  # Mapping rom spin group ID to dict of spgid to counts
+        self.spin_group_counts = {0:0} # Mapping from spin group ID to number of occurances of that spin group
+        
+        # Second pass through articles to get transition probabilities
+        for article_num in range(num_articles):
+            for sentence in self.src_articles.get_article_sentences(article_num):                    
+                prev_spgid = None
+                for spin_group in sentence: 
                     sgid = self.spin_groups_inverse[spin_group]
                     self.spin_group_counts[sgid] = self.spin_group_counts.get(sgid, 0) + 1
                     
@@ -63,10 +65,11 @@ class HMM():
                     self.transitions[prev_spgid] = transition_from_prev
                     
                     prev_spgid = sgid
-                    
+               
+        # Store # of spin group occurances and # of unique spin groups
         self.CHe = sum(self.spin_group_counts.values())
         self.Ne = len(self.spin_group_counts)
-                    
+    
     def transition_prob(self, src_sgid, dest_sgid):
         '''
         Returns probability that src_sgid will transition to dest_sgid.
@@ -104,6 +107,7 @@ class HMM():
         '''
         Returns probability that sgid will emit phrase. Phrase is a list of strings.
         '''
+        # Unknown state can only emit unknown single word phrases
         if sgid == 0:
             if len(phrase) == 1 and phrase not in self.phrases:
                 return 1.0
@@ -168,17 +172,17 @@ class HMM():
                 best_kv = (sgid, wb) , (prob, prev_key)
    
         # Backtrack 
-        spin_groups = []
+        sgs = []
         t = len(sentence)-1
         while t >= 0:
             (sgid, wb) , (_, prev_key) = best_kv
-            spin_groups.append(sgid)
+            sgs.append(sgid)
             t = t - wb - 1
             best_kv = prev_key , deltas[t].get(prev_key, (float("-INF"), (None, 0)))
                  
         # Returns the spin groups found
-        spin_groups.reverse()
-        return spin_groups
+        sgs.reverse()
+        return sgs
         
             
 
@@ -192,7 +196,7 @@ if __name__ == "__main__":
     print "--------------------------------------------------------------------"
     print "--------------------------------------------------------------------"
 
-    article_num = 1001
+    article_num = 0
     sentence_num = 0
     
     print "ORIGINAL SENTENCE:"
@@ -201,6 +205,7 @@ if __name__ == "__main__":
     
     #TODO: look at 202 sentence 1
     articles = hmm.src_articles.spin_dissimilar_articles(article_num, 2)
+    #articles[1] = hmm.src_articles.spin_article(article_num+1)
     
     sentence1 = tuple(articles[0][sentence_num].split())
     print len(sentence1)
