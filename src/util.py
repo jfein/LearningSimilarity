@@ -15,6 +15,9 @@ from nltk.stem import WordNetLemmatizer, PorterStemmer
 from nltk.corpus import wordnet, stopwords
 from nltk.tokenize import sent_tokenize
 
+import nltk
+from nltk.corpus.reader.wordnet import WordNetError
+from collections import Counter as counting
 
 DATA_PATH = "../data/data.xml"
 STOP_WORDS = stopwords.words("english")
@@ -35,12 +38,14 @@ class SourceArticles():
             stdize_article=False,
             omit_stopwords=False,
             max_phrase_size=None,
+            replace_with_synonyms=False,
         ):
 
         self.omit_stopwords = omit_stopwords
         self.stdize_kws = stdize_kws
         self.stdize_article = stdize_article
         self.max_phrase_size = max_phrase_size
+        self.replace_with_synonyms= replace_with_synonyms
         
         if stdizer == self.WORD_NET_LEMMATIZER:
             self.stdize_word = WordNetLemmatizer().lemmatize
@@ -226,18 +231,18 @@ class SourceArticles():
             
             for spin_group in spin_groups:
                 parsed_spin_group = []
-
+               # print spin_group
                 for phrase in spin_group:
                     words = (x.strip() for x in phrase.split())
-                
+                   # print phrase
                     if self.omit_stopwords:
                         words = (word for word in words if word not in STOP_WORDS)
-                
+                       # print words
                     if self.stdize_article:
                         words = (self.stdize_word(word) for word in words)
-                    
-	 	    if self.replace_with_synonyms:
-			words = (self.synonym_replace(words))
+                                          
+                    if self.replace_with_synonyms:
+                       words = (synonym_replace(word) for word in words)
     
                     words = tuple(words)
                     
@@ -382,13 +387,68 @@ def time_function(function_to_time):
         
     return timed_function
 
+def synonym_replace(text):
+  DATA_PATH = "../data/taggers.txt"
+  f = open(DATA_PATH, 'r')
+  tags= {}
+  for line in f:
+    line= line.strip()
+    pair= line.split(' ')
+    tags[pair[0]]= pair[1]
+
+  sentence = text
+  tokens = nltk.word_tokenize(sentence)
+  tagged = nltk.pos_tag(tokens)
+  newSentence = ""
+  #print tagged[0]
+  i = 0;
+  for tag in tagged:
+    if tag[1] in tags:
+      wordname = tokens[i]
+      pos = tags[tag[1]]
+      listOfSyn = []
+      #print pos
+      senses = ["01", "02", "03", "04", "05", "06"]
+      try:
+
+        for s in senses:
+          string =  wordname + "." + pos + "." + s
+          try:
+            new = wordnet.synset(string)
+           # print new.lemma_names
+            listOfSyn = listOfSyn +  new.lemma_names
+          except WordNetError:
+            if len(listOfSyn) == 0:
+                listOfSyn = listOfSyn + [wordname] 
+            
+        listOfSyn.sort()
+        c = counting(listOfSyn)
+        listOfSyn[0] = c.most_common()[0][0]
+        if len(newSentence) == 0:
+          newSentence = newSentence + listOfSyn[0]
+        else:
+          newSentence = newSentence + " " + listOfSyn[0]
+      except WordNetError:
+        if len(newSentence) == 0:
+          newSentence = newSentence + tag[0]
+        else:
+          newSentence = newSentence + " " + tag[0]
+    else:
+      if len(newSentence) == 0:
+        newSentence = newSentence + tag[0]
+      else:
+        newSentence = newSentence + " " + tag[0]
+      i=i+1
+  return newSentence
+
 if __name__ == "__main__":
     articles = SourceArticles(            
             stdizer=SourceArticles.PORTER_STEMMER,
             omit_stopwords=True,
             stdize_article=True,
             stdize_kws=True,
-            max_phrase_size=None
+            max_phrase_size=None,
+            replace_with_synonyms=True
     )
 
     
@@ -427,64 +487,4 @@ if __name__ == "__main__":
     print "Cosine Similarity: {0}".format(cosine(a1, a2))
 
     print "\n\n\nTesting Get Article Sentences\n\n"
-
-def synonym_replace(text)
-
-	import nltk
-	from nltk.corpus import wordnet as wn
-	from nltk.corpus.reader.wordnet import WordNetError
-	from collections import Counter
-
-	DATA_PATH = "../data/taggers.txt"
-	f = open(DATA_PATH, 'r')
-	tags= {}
-	for line in f:
-		line= line.strip()
-		pair= line.split(' ')
-		tags[pair[0]]= pair[1]
-
-	sentence = text
-	tokens = nltk.word_tokenize(sentence)
-	tagged = nltk.pos_tag(tokens)
-	newSentence = ""
-	print tagged[0]
-	i = 0;
-	for tag in tagged:
-		if tag[1] in tags:
-			word = tokens[i]
-			pos = tags[tag[1]]
-			listOfSyn = []
-			print pos
-			senses = ["01", "02", "03", "04", "05", "06"]
-			try:
-
-				for s in senses:
-					string =  word + "." + pos + "." + s
-					try:
-						new = wn.synset(string)
-						print new.lemma_names
-						listOfSyn = listOfSyn +  new.lemma_names
-					except WordNetError:
-						print "No more senses after sense " + s
-				listOfSyn.sort()
-				counter = Counter(listOfSyn)
-				listOfSyn[0] = counter.most_common()[0][0]
-				if len(newSentence) == 0:
-			       newSentence = newSentence + listOfSyn[0]
-				else:
-					newSentence = newSentence + " " + listOfSyn[0]
-			except WordNetError:
-				if len(newSentence) == 0:
-					newSentence = newSentence + tag[0]
-				else:
-					newSentence = newSentence + " " + tag[0]
-
-
-		else:
-			if len(newSentence) == 0:
-				newSentence = newSentence + tag[0]
-			else:
-				newSentence = newSentence + " " + tag[0]
-		i=i+1
-	return newSentence
 
