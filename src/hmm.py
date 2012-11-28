@@ -4,6 +4,7 @@ from hac import improved_hac
 import time
 import cPickle as pickle
 
+MAX_ARTICLE_NUM = 2500
 
 def log(x):
     if x <= 0:
@@ -89,8 +90,15 @@ class HMM():
         self.spin_groups_inverse = {frozenset():0}  # Mapping from spin group to spin group ID
         self.phrases = {} # Set of all unique phrases
 
+
+        article_num = random.randint(0, MAX_ARTICLE_NUM / 2) * 2
+        used_articles = []
+
         # First pass through articles to get all unique spin groups
-        for article_num in range(num_articles):
+        for _ in range(num_articles):
+            article_num = article_num + 2 % MAX_ARTICLE_NUM
+            used_articles.append(article_num)
+
             for sentence in self.src_articles.get_article_sentences(article_num):
                 for spin_group in sentence:
                     if spin_group not in self.spin_groups_inverse:
@@ -112,7 +120,7 @@ class HMM():
         self.cluster_counts = {0:0} # Mapping from spin group ID to number of occurances of that spin group
 
         # Second pass through articles to get transition probabilities
-        for article_num in range(num_articles):
+        for article_num in used_articles:
             for sentence in self.src_articles.get_article_sentences(article_num):
                 prev_cid = None
                 for spin_group in sentence:
@@ -212,7 +220,6 @@ class HMM():
                     # Not a start probability
                     else:
                         prev_delta = deltas[t-1-wb]
-                        print len(prev_delta)
                         best_prev_key = None
                         max = None
                         emit_prob = self.emission_prob(cid, phrase)
@@ -301,7 +308,7 @@ class HMM():
 if __name__ == "__main__":
     use_pickled = False
     pickle_output = False
-    pickle_filename = "hmm-600-clustered1.pickle"
+    pickle_filename = "hmm-600-clustered.pickle"
 
     num_articles = 50
     article_num = random.choice(range(num_articles,2959))
