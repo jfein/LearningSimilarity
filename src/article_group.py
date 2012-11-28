@@ -67,9 +67,9 @@ def create_strict_article_group_from_sa(source_articles, max_classes, max_ex_per
         if length == max_classes:
             return ag
 
-        for _ in xrange(max_ex_per_class):
+        for article in source_articles.spin_articles(i, max_ex_per_class):
             bag= []
-            for sentence in source_articles.spin_article(i):
+            for sentence in article:
                 bag += sentence.split(' ')
 
             ag.add_example(i, source_articles.get_keywords(i), Counter(bag))
@@ -78,7 +78,8 @@ def create_strict_article_group_from_sa(source_articles, max_classes, max_ex_per
 
     return ag
 
-#def create_keyword_article_group_from_sa():
+#def create_keyword_article_group_from_sa(source_articles, max_classes,\
+#                                         max_er_per_class, ):
 
 if __name__ == "__main__":
     sa= SourceArticles()
