@@ -1,5 +1,5 @@
 from util import SourceArticles, time_function
-from hmm import HMM
+#from hmm import HMM
 import heapq
 
 
@@ -70,7 +70,7 @@ def sim_single_link(cluster1, cluster2):
 def improved_hac(spin_groups,
     spin_groups_inverse,
     inverted_phrase_index,
-    stopping_threshold=.75,
+    stopping_threshold=.5,
     stopping_num_of_groups=None,
     sim_func=sim_complete_link,
     print_out=False):
