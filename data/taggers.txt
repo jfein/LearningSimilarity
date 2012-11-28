@@ -1,0 +1,14 @@
+JJ a
+JJS a
+JJR a
+NN n
+NNS n
+RB r
+RBR r
+RBS r
+VB v
+VBD v
+VBG v
+VBN v
+VBP v
+VBZ v
