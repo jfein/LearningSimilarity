@@ -1,5 +1,5 @@
 import math
-from util import SourceArticles
+from util import SourceArticles, cosine, time_function
 
 
 def log(x):
@@ -33,7 +33,7 @@ class HMM():
         # TODO: count of unknown state???
         self.spin_group_counts = {0:0} # Mapping from spin group ID to number of occurances of that spin group
         
-        self.phrases = set() # Set of all unique phrases
+        self.phrases = {} # Set of all unique phrases
         
         for article_num in range(num_articles):
             sentences = self.src_articles.get_article_sentences(article_num)
@@ -47,8 +47,11 @@ class HMM():
                         self.spin_groups.append(spin_group)
                         sgid = len(self.spin_groups) - 1
                         self.spin_groups_inverse[spin_group] = sgid
+                        # Map phrases in this spin group to this spin group ID
                         for phrase in spin_group:
-                            self.phrases.add(phrase)                        
+                            if phrase not in self.phrases:
+                                self.phrases[phrase] = []
+                            self.phrases[phrase].append(sgid)                      
                     sgid = self.spin_groups_inverse[spin_group]
                     self.spin_group_counts[sgid] = self.spin_group_counts.get(sgid, 0) + 1
                     
@@ -66,10 +69,12 @@ class HMM():
                     
     def transition_prob(self, src_sgid, dest_sgid):
         '''
-        Returns probability that src_sgid will transition to dest_sgid
+        Returns probability that src_sgid will transition to dest_sgid.
+        Uses Witten-Bell smoothing:
+            http://www.ee.columbia.edu/~stanchen/e6884/labs/lab3/x207.html
         '''
         edges_from_src = self.transitions.get(src_sgid, {})
-        # unknown state transitions to all others
+        # "unknown" state transitions to all others
         if src_sgid == 0:
             edges_from_src = self.spin_group_counts
         
@@ -110,6 +115,7 @@ class HMM():
         else:
             return 0.0
             
+    @time_function
     def classify_sentence(self, sentence):
         '''
         Returns the most likely sequence of spin groups that could have generated sentence
@@ -178,7 +184,7 @@ class HMM():
 
         
 if __name__ == "__main__":
-    hmm = HMM(4, 200)
+    hmm = HMM(4, 10)
     
     for sgid, spin_group in enumerate(hmm.spin_groups):
         print "{0} : {1}".format(sgid, spin_group)
@@ -186,20 +192,46 @@ if __name__ == "__main__":
     print "--------------------------------------------------------------------"
     print "--------------------------------------------------------------------"
 
-    for _ in range(2):
-        article_num = 500
+    article_num = 1001
+    sentence_num = 0
+    
+    print "ORIGINAL SENTENCE:"
+    print hmm.src_articles.get_article_sentences(article_num)[sentence_num]
+    print "--------------------------------------------------------------------" 
+    
+    #TODO: look at 202 sentence 1
+    articles = hmm.src_articles.spin_dissimilar_articles(article_num, 2)
+    
+    sentence1 = tuple(articles[0][sentence_num].split())
+    print len(sentence1)
+    print "CLASSIFYING :\n{0}".format(sentence1)
+    
+    classified_sentence1 = set()
+    groups = hmm.classify_sentence(sentence1)
+    for group in groups:
+        spin_group = hmm.spin_groups[group]
+        for phrase in spin_group:
+            for word in phrase:
+                classified_sentence1.add(word)
+        print "ID: {0}\t{1}".format(group, spin_group)
         
-        #TODO: look at 202 sentence 1
-        sentence = tuple(hmm.src_articles.spin_article(article_num)[5].split())
+    print "--------------------------------------------------------------------"   
+    
+    sentence2 = tuple(articles[1][sentence_num].split())
+    print len(sentence2)
+    print "CLASSIFYING :\n{0}".format(sentence2)
+    
+    classified_sentence2 = set()
+    groups = hmm.classify_sentence(sentence2)
+    for group in groups:
+        spin_group = hmm.spin_groups[group]
+        for phrase in spin_group:
+            for word in phrase:
+                classified_sentence2.add(word)
+        print "ID: {0}\t{1}".format(group, spin_group)
         
-        print len(sentence)
-        print hmm.src_articles.get_article_sentences(article_num)[5]
-        print "CLASSIFYING :\n{0}".format(sentence)
-        
-        groups = hmm.classify_sentence(sentence)
-        
-        for group in groups:
-            print "ID: {0}\t{1}".format(group, hmm.spin_groups[group])
-            
-        print "--------------------------------------------------------------------"   
+    print "--------------------------------------------------------------------"  
+    
+    print "COSINE OF SENTENCES: {0}".format(cosine(" ".join(sentence1), " ".join(sentence2)))
+    print "COSINE OF CLASSIFIED SENTENCES: {0}".format(cosine(" ".join(classified_sentence1), " ".join(classified_sentence2)))
     
