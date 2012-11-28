@@ -1,5 +1,5 @@
 import math
-from util import SourceArticles
+from util import SourceArticles, cosine
 
 
 def log(x):
@@ -178,7 +178,7 @@ class HMM():
 
         
 if __name__ == "__main__":
-    hmm = HMM(4, 200)
+    hmm = HMM(4, 1000)
     
     for sgid, spin_group in enumerate(hmm.spin_groups):
         print "{0} : {1}".format(sgid, spin_group)
@@ -186,20 +186,46 @@ if __name__ == "__main__":
     print "--------------------------------------------------------------------"
     print "--------------------------------------------------------------------"
 
-    for _ in range(2):
-        article_num = 500
+    article_num = 1001
+    sentence_num = 0
+    
+    print "ORIGINAL SENTENCE:"
+    print hmm.src_articles.get_article_sentences(article_num)[sentence_num]
+    print "--------------------------------------------------------------------" 
+    
+    #TODO: look at 202 sentence 1
+    articles = hmm.src_articles.spin_dissimilar_articles(article_num, 2)
+    
+    sentence1 = tuple(articles[0][sentence_num].split())
+    print len(sentence1)
+    print "CLASSIFYING :\n{0}".format(sentence1)
+    
+    classified_sentence1 = set()
+    groups = hmm.classify_sentence(sentence1)
+    for group in groups:
+        spin_group = hmm.spin_groups[group]
+        for phrase in spin_group:
+            for word in phrase:
+                classified_sentence1.add(word)
+        print "ID: {0}\t{1}".format(group, spin_group)
         
-        #TODO: look at 202 sentence 1
-        sentence = tuple(hmm.src_articles.spin_article(article_num)[5].split())
+    print "--------------------------------------------------------------------"   
+    
+    sentence2 = tuple(articles[1][sentence_num].split())
+    print len(sentence2)
+    print "CLASSIFYING :\n{0}".format(sentence2)
+    
+    classified_sentence2 = set()
+    groups = hmm.classify_sentence(sentence2)
+    for group in groups:
+        spin_group = hmm.spin_groups[group]
+        for phrase in spin_group:
+            for word in phrase:
+                classified_sentence2.add(word)
+        print "ID: {0}\t{1}".format(group, spin_group)
         
-        print len(sentence)
-        print hmm.src_articles.get_article_sentences(article_num)[5]
-        print "CLASSIFYING :\n{0}".format(sentence)
-        
-        groups = hmm.classify_sentence(sentence)
-        
-        for group in groups:
-            print "ID: {0}\t{1}".format(group, hmm.spin_groups[group])
-            
-        print "--------------------------------------------------------------------"   
+    print "--------------------------------------------------------------------"  
+    
+    print "COSINE OF SENTENCES: {0}".format(cosine(" ".join(sentence1), " ".join(sentence2)))
+    print "COSINE OF CLASSIFIED SENTENCES: {0}".format(cosine(" ".join(classified_sentence1), " ".join(classified_sentence2)))
     

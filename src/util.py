@@ -226,19 +226,23 @@ class SourceArticles():
                 parsed_spin_group = []
 
                 for phrase in spin_group:
+                    words = (x.strip() for x in phrase.split())
+                
+                    if self.omit_stopwords:
+                        words = (word for word in words if word not in STOP_WORDS)
+                
                     if self.stdize_article:
-                        words = (self.stdize_word(x.strip()) for x in phrase.split())
-                    else:
-                        words = (x.strip() for x in phrase.split())
+                        words = (self.stdize_word(word) for word in words)
+                        
+                    words = tuple(words)
 
-                    words_tuple = tuple(word for word in words if (not self.omit_stopwords or word not in STOP_WORDS))
-
-                    if self.max_phrase_size and len(words_tuple) > self.max_phrase_size:
+                    if self.max_phrase_size and len(words) > self.max_phrase_size:
                         # Just discard the whole sentence
                         discard_sentence = True
+                        
                     #Words tuple may be empty if it's just stopwords
-                    if words_tuple:
-                        parsed_spin_group.append(words_tuple)
+                    if words:
+                        parsed_spin_group.append(words)
 
                 # Parsed spin group may be empty if we're omitting stopwords. Only add it if it is nonempty
                 if parsed_spin_group:
