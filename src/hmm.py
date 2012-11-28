@@ -1,17 +1,43 @@
 import math, random
 from util import SourceArticles, cosine, time_function
 from hac import improved_hac
+import time
+import cPickle as pickle
 
 
 def log(x):
     if x <= 0:
         return float("-INF")
     return math.log(x)
-    
+
+
+class HMM_State():
+    def __init__(self,
+                 sgid_to_cid,
+                 clusters,
+                 cluster_counts,
+                 transitions,
+                 CHe,
+                 Ne,
+                 phrases):
+
+        self.sgid_to_cid = sgid_to_cid
+        self.clusters = clusters
+        self.cluster_counts = cluster_counts
+        self.transitions = transitions
+        self.CHe = CHe
+        self.Ne = Ne
+        self.phrases = phrases
 
 class HMM():
 
-    def __init__(self, ngram, num_articles=None, use_clusters=True):
+    def __init__(self,
+                 ngram,
+                 num_articles=None,
+                 use_clusters=True,
+                 use_pickled=True,
+                 pickle_output=True,
+                 pickle_filename="hmm.pickle"):
         self.ngram = ngram
 
         # Set up the source articles
@@ -22,17 +48,50 @@ class HMM():
             stdize_article=True,
             max_phrase_size=ngram
         )
-        
+
         if not num_articles:
             num_articles = self.src_articles.count
-        
+
+        start = time.time()
+
+        if use_pickled:
+            f = open(pickle_filename, 'rb')
+            hmm_state = pickle.load(f)
+            f.close()
+
+            self.sgid_to_cid = hmm_state.sgid_to_cid
+            self.clusters = hmm_state.clusters
+            self.cluster_counts = hmm_state.cluster_counts
+            self.transitions = hmm_state.transitions
+            self.CHe = hmm_state.CHe
+            self.Ne = hmm_state.Ne
+            self.phrases = hmm_state.phrases
+
+        else:
+            self.build_hmm(num_articles, use_clusters)
+
+        print "Building hmm took {0} seconds".format(time.time() - start)
+
+        if pickle_output:
+            hmm_state = HMM_State(self.sgid_to_cid,
+                                  self.clusters,
+                                  self.cluster_counts,
+                                  self.transitions,
+                                  self.CHe,
+                                  self.Ne,
+                                  self.phrases)
+            f = open(pickle_filename, 'wb')
+            pickle.dump(hmm_state, f)
+            f.close()
+
+    def build_hmm(self, num_articles, use_clusters):
         self.spin_groups = [frozenset()]  # List of spin groups (spin group is a set of phrase tuples), indexed by spin group ID
         self.spin_groups_inverse = {frozenset():0}  # Mapping from spin group to spin group ID
         self.phrases = {} # Set of all unique phrases
-        
+
         # First pass through articles to get all unique spin groups
         for article_num in range(num_articles):
-            for sentence in self.src_articles.get_article_sentences(article_num):                    
+            for sentence in self.src_articles.get_article_sentences(article_num):
                 for spin_group in sentence:
                     if spin_group not in self.spin_groups_inverse:
                         sgid = len(self.spin_groups)
@@ -48,33 +107,33 @@ class HMM():
         else:
             self.sgid_to_cid = dict((x,x) for x in self.spin_groups_inverse.values())
             self.clusters = dict(enumerate(self.spin_groups))
-                            
+
         self.transitions = {}  # Mapping rom spin group ID to dict of spgid to counts
         self.cluster_counts = {0:0} # Mapping from spin group ID to number of occurances of that spin group
-        
+
         # Second pass through articles to get transition probabilities
         for article_num in range(num_articles):
-            for sentence in self.src_articles.get_article_sentences(article_num):                    
+            for sentence in self.src_articles.get_article_sentences(article_num):
                 prev_cid = None
-                for spin_group in sentence: 
+                for spin_group in sentence:
                     sgid = self.spin_groups_inverse[spin_group]
                     cid = self.sgid_to_cid[sgid]
-                    
+
                     self.cluster_counts[cid] = self.cluster_counts.get(cid, 0) + 1
-                    
+
                     # Add the edge from prev_spgid to spgid
                     transition_from_prev = self.transitions.get(prev_cid, {})
                     transition_from_prev_to_cur = transition_from_prev.get(cid, 0)
                     transition_from_prev_to_cur += 1
                     transition_from_prev[cid] = transition_from_prev_to_cur
                     self.transitions[prev_cid] = transition_from_prev
-                    
+
                     prev_cid = cid
-               
+
         # Store # of spin group occurances and # of unique spin groups
         self.CHe = sum(self.cluster_counts.values())
         self.Ne = len(self.cluster_counts)
-    
+
     def transition_prob(self, src_cid, dest_cid):
         '''
         Returns probability that src_cid will transition to dest_cid.
@@ -85,28 +144,28 @@ class HMM():
         # "unknown" state transitions to all others
         if src_cid == 0:
             edges_from_src = self.cluster_counts
-        
+
         # number of times dest_cid occurs
         Cd = float(self.cluster_counts.get(dest_cid, 0))
-        
+
         # count of transitions from src_cid to dest_cid
         Csd = float(edges_from_src.get(dest_cid, 0))
-        
+
         # number of total transitions from src_cid
         CHs = float(sum(edges_from_src.values()))
         # numver of unique transitions from src_cid
         Ns = float(len(edges_from_src))
-        
+
         # No transitions from src_cid, return 0
         if CHs == 0.0:
             return 0.0
-        
+
         Pmle = Csd / CHs
         Pb = (Cd + 1) / (self.CHe + self.Ne)
-        
+
         return ((CHs / (CHs + Ns)) * Pmle) + ((Ns / (CHs + Ns)) * Pb)
         #return Pmle
-        
+
     def emission_prob(self, cid, phrase):
         '''
         Returns probability that sgid will emit phrase. Phrase is a list of strings.
@@ -116,42 +175,44 @@ class HMM():
             if len(phrase) == 1 and phrase not in self.phrases:
                 return 1.0
             return 0.0
-            
+
         cluster = self.clusters[cid]
         if phrase in cluster:
             return 1.0 / len(cluster)
         else:
             return 0.0
-            
-    
+
+
     def classify_sentence(self, sentence):
         '''
         Returns the most likely sequence of spin groups that could have generated sentence
         n is the number of n-grams to consider
         '''
         deltas = []
-        
+
         for t in range(len(sentence)):
             delta = {}
             for cid in self.clusters:
                 for wb in range(self.ngram):
                     key = (cid, wb)
-                    
+
                     # Make sure theres enough words back
                     if t-wb < 0:
                         delta[key] = (float("-INF"), (None, 0))
                         continue
-                    
+
                     # Extract the phrase
                     phrase = sentence[t-wb:t+1]
-                                        
+
                     # Is a start probability
                     if t-1-wb < 0:
                         value = log(self.transition_prob(None, cid)) + log(self.emission_prob(cid, phrase))
                         delta[key] = (value , (None, 0))
+
                     # Not a start probability
                     else:
                         prev_delta = deltas[t-1-wb]
+                        print len(prev_delta)
                         best_prev_key = None
                         max = None
                         emit_prob = self.emission_prob(cid, phrase)
@@ -163,9 +224,9 @@ class HMM():
                                     best_prev_key = (prev_cid, prev_wb)
                         if best_prev_key:
                             delta[key] = (max , best_prev_key)
-                            
+
             deltas.append(delta)
-                    
+
         # Find the max in the last delta
         last_delta = deltas[t]
         max_prob = None
@@ -174,8 +235,8 @@ class HMM():
             if prob >= max_prob:
                 max_prob = prob
                 best_kv = (cid, wb) , (prob, prev_key)
-   
-        # Backtrack 
+
+        # Backtrack
         sgs = []
         t = len(sentence)-1
         while t >= 0:
@@ -183,23 +244,23 @@ class HMM():
             sgs.append(cid)
             t = t - wb - 1
             best_kv = prev_key , deltas[t].get(prev_key, (float("-INF"), (None, 0)))
-                 
+
         # Returns the spin groups found
         sgs.reverse()
         return sgs
-     
-    @time_function
+
+
     def classify_article(self, article):
         '''
         article is list of sentence strings.
-        returns list of sentences corresponding to 
+        returns list of sentences corresponding to
         '''
         spin_groups = []
         for sentence in article:
             classified = self.classify_sentence(tuple(sentence.split()))
             spin_groups = spin_groups + classified
         return spin_groups
-        
+
     def compare_articles(self, article1, article2):
         '''
         articles are list of sentence strings
@@ -213,7 +274,7 @@ class HMM():
                     classified_article1.append(word)
             #print "ID: {0}\t{1}".format(group, cluster)
         article1 = " ".join(article1).split()
-        
+
         classified_article2_groups = hmm.classify_article(article2)
         classified_article2 = []
         for group in classified_article2_groups:
@@ -223,7 +284,7 @@ class HMM():
                     classified_article2.append(word)
             #print "ID: {0}\t{1}".format(group, cluster)
         article2 = " ".join(article2).split()
-        
+
         print "COSINE OF ARTICLES: {0}".format(cosine(" ".join(article1), " ".join(article2)))
         print "COSINE OF CLASSIFIED ARTICLES: {0}".format(cosine(" ".join(classified_article1), " ".join(classified_article2)))
         print "cosine of A1 and classified A1: {0}".format(cosine(" ".join(classified_article1), " ".join(article1)))
@@ -234,34 +295,48 @@ class HMM():
         print "WORDS IN COMMON A2 and classified A2: {0}".format(len(set(article2).intersection(set(classified_article2))))
         print "WORDS IN COMMON A1 and classified A2: {0}".format(len(set(article1).intersection(set(classified_article2))))
         print "WORDS IN COMMON A2 and classified A1: {0}".format(len(set(article2).intersection(set(classified_article1))))
-        
 
-        
+
+
 if __name__ == "__main__":
-    num_articles = 100
+    use_pickled = False
+    pickle_output = False
+    pickle_filename = "hmm-600-clustered1.pickle"
+
+    num_articles = 50
     article_num = random.choice(range(num_articles,2959))
     sentence_num = 0
-    
-    hmm = HMM(4, num_articles)
-       
+
+
+    hmm = HMM(4,
+             num_articles,
+             use_clusters=True,
+             use_pickled=use_pickled,
+             pickle_output=pickle_output,
+             pickle_filename=pickle_filename,
+             )
+
+
     #TODO: look at 202 sentence 1
     articles = hmm.src_articles.spin_dissimilar_articles(article_num, 2)
     #articles[1] = hmm.src_articles.spin_article(article_num+1)
-    
-    print "--------------------------------------------------------------------" 
-    print "--------------------------------------------------------------------" 
-    
+
+    print "--------------------------------------------------------------------"
+    print "--------------------------------------------------------------------"
+
     print "WITH CLUSTERING"
-    
+
     hmm.compare_articles(articles[0], articles[1])
-    
-    
+
+
     print "--------------------------------------------------------------------"
     print "--------------------------------------------------------------------"
 
     print "WITHOUT CLUSTERING"
-    
-    hmm = HMM(4, num_articles, use_clusters=False)
-    
+
+    hmm = HMM(4,
+              num_articles,
+              use_clusters=False,
+              )
+
     hmm.compare_articles(articles[0], articles[1])
-    
