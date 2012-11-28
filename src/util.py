@@ -272,6 +272,14 @@ class SourceArticles():
             similar_articles.remove(num)
         return similar_articles
 
+    def get_articles_with_shared_keyword(self, keyword):
+        '''
+        Returns a list of articles that share the 
+        given keyword
+        '''
+        return self.keywords.get(keyword)
+
+
     def get_very_similar_articles(self, num):
         '''
         Returns a list of articles with all
