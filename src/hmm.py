@@ -29,6 +29,7 @@ class HMM_State():
         self.Ne = Ne
         self.phrases = phrases
 
+        
 class HMM():
 
     def __init__(self,
@@ -212,7 +213,6 @@ class HMM():
                     # Not a start probability
                     else:
                         prev_delta = deltas[t-1-wb]
-                        print len(prev_delta)
                         best_prev_key = None
                         max = None
                         emit_prob = self.emission_prob(cid, phrase)
@@ -260,83 +260,86 @@ class HMM():
             classified = self.classify_sentence(tuple(sentence.split()))
             spin_groups = spin_groups + classified
         return spin_groups
-
-    def compare_articles(self, article1, article2):
-        '''
-        articles are list of sentence strings
-        '''
-        classified_article1_groups = hmm.classify_article(article1)
-        classified_article1 = []
-        for group in classified_article1_groups:
+        
+    def classify_article_formatted(self, article):
+        classified_article_groups = hmm.classify_article(article)
+        
+        classified_article = []
+        for group in classified_article_groups:
             cluster = hmm.clusters[group]
             for phrase in cluster:
                 for word in phrase:
-                    classified_article1.append(word)
+                    classified_article.append(word)
             #print "ID: {0}\t{1}".format(group, cluster)
-        article1 = " ".join(article1).split()
-
-        classified_article2_groups = hmm.classify_article(article2)
-        classified_article2 = []
-        for group in classified_article2_groups:
-            cluster = hmm.clusters[group]
-            for phrase in cluster:
-                for word in phrase:
-                    classified_article2.append(word)
-            #print "ID: {0}\t{1}".format(group, cluster)
-        article2 = " ".join(article2).split()
-
+        article = " ".join(article).split()
+        
+        return (article , classified_article)
+        
+    def print_comparison_stats(self, article1, article2, classified_article1, classified_article2):
         print "COSINE OF ARTICLES: {0}".format(cosine(" ".join(article1), " ".join(article2)))
         print "COSINE OF CLASSIFIED ARTICLES: {0}".format(cosine(" ".join(classified_article1), " ".join(classified_article2)))
         print "cosine of A1 and classified A1: {0}".format(cosine(" ".join(classified_article1), " ".join(article1)))
         print "cosine of A2 and classified A2: {0}".format(cosine(" ".join(classified_article2), " ".join(article2)))
         print "cosine of A1 and classified A2: {0}".format(cosine(" ".join(classified_article2), " ".join(article1)))
         print "cosine of A2 and classified A1: {0}".format(cosine(" ".join(classified_article1), " ".join(article2)))
-        print "WORDS IN COMMON A1 and classified A1: {0}".format(len(set(article1).intersection(set(classified_article1))))
-        print "WORDS IN COMMON A2 and classified A2: {0}".format(len(set(article2).intersection(set(classified_article2))))
-        print "WORDS IN COMMON A1 and classified A2: {0}".format(len(set(article1).intersection(set(classified_article2))))
-        print "WORDS IN COMMON A2 and classified A1: {0}".format(len(set(article2).intersection(set(classified_article1))))
-
-
-
+        print "WORDS IN COMMON A1 and classified A1: {0}".format(float(len(set(article1).intersection(set(classified_article1)))) / len(set(article1)))
+        print "WORDS IN COMMON A2 and classified A2: {0}".format(float(len(set(article2).intersection(set(classified_article2)))) / len(set(article2)))
+        print "WORDS IN COMMON A1 and classified A2: {0}".format(float(len(set(article1).intersection(set(classified_article2)))) / len(set(article1)))
+        print "WORDS IN COMMON A2 and classified A1: {0}".format(float(len(set(article2).intersection(set(classified_article1)))) / len(set(article2)))
+                
+    def compare_articles(self, article1, article2):
+        '''
+        articles are list of sentence strings
+        '''
+        (article1 , classified_article1) = self.classify_article_formatted(article1)
+        (article2 , classified_article2) = self.classify_article_formatted(article2)
+        self.print_comparison_stats(article1, article2, classified_article1, classified_article2)
+        
+        
+        
 if __name__ == "__main__":
-    use_pickled = False
-    pickle_output = False
-    pickle_filename = "hmm-600-clustered1.pickle"
-
-    num_articles = 50
-    article_num = random.choice(range(num_articles,2959))
-    sentence_num = 0
-
-
+    num_articles = 600
+    
     hmm = HMM(4,
              num_articles,
              use_clusters=True,
-             use_pickled=use_pickled,
-             pickle_output=pickle_output,
-             pickle_filename=pickle_filename,
+             use_pickled=False,
+             pickle_output=True,
+             pickle_filename="hmm-600-clustered.pickle",
              )
 
-
     #TODO: look at 202 sentence 1
-    articles = hmm.src_articles.spin_dissimilar_articles(article_num, 2)
-    #articles[1] = hmm.src_articles.spin_article(article_num+1)
-
-    print "--------------------------------------------------------------------"
-    print "--------------------------------------------------------------------"
-
-    print "WITH CLUSTERING"
-
-    hmm.compare_articles(articles[0], articles[1])
-
-
-    print "--------------------------------------------------------------------"
-    print "--------------------------------------------------------------------"
-
-    print "WITHOUT CLUSTERING"
-
-    hmm = HMM(4,
-              num_articles,
-              use_clusters=False,
-              )
-
-    hmm.compare_articles(articles[0], articles[1])
+    articles_a = hmm.src_articles.spin_dissimilar_articles(random.choice(range(num_articles,2900)), 2)
+    articles_b = hmm.src_articles.spin_dissimilar_articles(random.choice(range(num_articles,2900)), 2)
+    
+    (article_a0 , classified_article_a0) = hmm.classify_article_formatted(articles_a[0])
+    (article_a1 , classified_article_a1) = hmm.classify_article_formatted(articles_a[1])
+    
+    #(article_b0 , classified_article_b0) = hmm.classify_article_formatted(articles_b[0])
+    #(article_b1 , classified_article_b1) = hmm.classify_article_formatted(articles_b[1])
+    
+    
+    print "--------------------------------------------------------------------" 
+    print "--------------------------------------------------------------------" 
+            
+    print "SIMILAR ARTICLES A:\n"
+    hmm.print_comparison_stats(article_a0, article_a1, classified_article_a0, classified_article_a1)
+    print
+    '''
+    print "SIMILAR ARTICLES B:\n"
+    hmm.print_comparison_stats(article_b0, article_b1, classified_article_b0, classified_article_b1)
+    
+    print "--------------------------------------------------------------------" 
+   
+    print "NOT SIMILAR ARTICLES A0 B0:\n"
+    hmm.print_comparison_stats(article_a0, article_b0, classified_article_a0, classified_article_b0)
+    print
+    print "NOT SIMILAR ARTICLES A1 B0:\n"
+    hmm.print_comparison_stats(article_a1, article_b0, classified_article_a1, classified_article_b0)
+    print
+    print "NOT SIMILAR ARTICLES A0 B1:\n"
+    hmm.print_comparison_stats(article_a0, article_b1, classified_article_a0, classified_article_b1)
+    print
+    print "NOT SIMILAR ARTICLES A1 B1:\n"
+    hmm.print_comparison_stats(article_a1, article_b1, classified_article_a1, classified_article_b1)
+    '''
