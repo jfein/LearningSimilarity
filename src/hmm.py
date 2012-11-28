@@ -97,7 +97,7 @@ class HMM():
 
         # First pass through articles to get all unique spin groups
         for _ in range(num_articles):
-            article_num = article_num + 2 % MAX_ARTICLE_NUM
+            article_num = (article_num + 2) % MAX_ARTICLE_NUM
             used_articles.append(article_num)
 
             for sentence in self.src_articles.get_article_sentences(article_num):
