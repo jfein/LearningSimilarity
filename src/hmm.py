@@ -1,4 +1,4 @@
-import math
+import math, random
 from util import SourceArticles, cosine, time_function
 from hac import improved_hac
 
@@ -16,7 +16,7 @@ class HMM():
 
         # Set up the source articles
         self.src_articles = SourceArticles(
-            stdizer=SourceArticles.PORTER_STEMMER,
+            #stdizer=SourceArticles.PORTER_STEMMER,
             omit_stopwords=True,
             stdize_kws=True,
             stdize_article=True,
@@ -123,7 +123,7 @@ class HMM():
         else:
             return 0.0
             
-    @time_function
+    
     def classify_sentence(self, sentence):
         '''
         Returns the most likely sequence of spin groups that could have generated sentence
@@ -187,20 +187,63 @@ class HMM():
         # Returns the spin groups found
         sgs.reverse()
         return sgs
+     
+    @time_function
+    def classify_article(self, article):
+        '''
+        article is list of sentence strings.
+        returns list of sentences corresponding to 
+        '''
+        spin_groups = []
+        for sentence in article:
+            classified = self.classify_sentence(tuple(sentence.split()))
+            spin_groups = spin_groups + classified
+        return spin_groups
         
-            
+    def compare_articles(self, article1, article2):
+        '''
+        articles are list of sentence strings
+        '''
+        classified_article1_groups = hmm.classify_article(article1)
+        classified_article1 = []
+        for group in classified_article1_groups:
+            cluster = hmm.clusters[group]
+            for phrase in cluster:
+                for word in phrase:
+                    classified_article1.append(word)
+            #print "ID: {0}\t{1}".format(group, cluster)
+        article1 = " ".join(article1).split()
+        
+        classified_article2_groups = hmm.classify_article(article2)
+        classified_article2 = []
+        for group in classified_article2_groups:
+            cluster = hmm.clusters[group]
+            for phrase in cluster:
+                for word in phrase:
+                    classified_article2.append(word)
+            #print "ID: {0}\t{1}".format(group, cluster)
+        article2 = " ".join(article2).split()
+        
+        print "COSINE OF ARTICLES: {0}".format(cosine(" ".join(article1), " ".join(article2)))
+        print "COSINE OF CLASSIFIED ARTICLES: {0}".format(cosine(" ".join(classified_article1), " ".join(classified_article2)))
+        print "cosine of A1 and classified A1: {0}".format(cosine(" ".join(classified_article1), " ".join(article1)))
+        print "cosine of A2 and classified A2: {0}".format(cosine(" ".join(classified_article2), " ".join(article2)))
+        print "cosine of A1 and classified A2: {0}".format(cosine(" ".join(classified_article2), " ".join(article1)))
+        print "cosine of A2 and classified A1: {0}".format(cosine(" ".join(classified_article1), " ".join(article2)))
+        print "WORDS IN COMMON A1 and classified A1: {0}".format(len(set(article1).intersection(set(classified_article1))))
+        print "WORDS IN COMMON A2 and classified A2: {0}".format(len(set(article2).intersection(set(classified_article2))))
+        print "WORDS IN COMMON A1 and classified A2: {0}".format(len(set(article1).intersection(set(classified_article2))))
+        print "WORDS IN COMMON A2 and classified A1: {0}".format(len(set(article2).intersection(set(classified_article1))))
+        
 
         
 if __name__ == "__main__":
-    num_articles = 200
-    article_num = 324
+    num_articles = 100
+    article_num = random.choice(range(num_articles,2959))
     sentence_num = 0
     
     hmm = HMM(4, num_articles)
-    
-    print "ORIGINAL SENTENCE:"
-    print hmm.src_articles.get_article_sentences(article_num)[sentence_num]
-    
+       
     #TODO: look at 202 sentence 1
     articles = hmm.src_articles.spin_dissimilar_articles(article_num, 2)
     #articles[1] = hmm.src_articles.spin_article(article_num+1)
@@ -210,38 +253,7 @@ if __name__ == "__main__":
     
     print "WITH CLUSTERING"
     
-    sentence1 = tuple(articles[0][sentence_num].split())
-    print len(sentence1)
-    print "CLASSIFYING :\n{0}".format(sentence1)
-    
-    classified_sentence1 = set()
-    groups = hmm.classify_sentence(sentence1)
-    for group in groups:
-        cluster = hmm.clusters[group]
-        for phrase in cluster:
-            for word in phrase:
-                classified_sentence1.add(word)
-        print "ID: {0}\t{1}".format(group, cluster)
-        
-    print "----------------------------------------------------------"  
-    
-    sentence2 = tuple(articles[1][sentence_num].split())
-    print len(sentence2)
-    print "CLASSIFYING :\n{0}".format(sentence2)
-    
-    classified_sentence2 = set()
-    groups = hmm.classify_sentence(sentence2)
-    for group in groups:
-        cluster = hmm.clusters[group]
-        for phrase in cluster:
-            for word in phrase:
-                classified_sentence2.add(word)
-        print "ID: {0}\t{1}".format(group, cluster)
-        
-    print "----------------------------------------------------------"  
-    
-    print "COSINE OF SENTENCES: {0}".format(cosine(" ".join(sentence1), " ".join(sentence2)))
-    print "COSINE OF CLASSIFIED SENTENCES: {0}".format(cosine(" ".join(classified_sentence1), " ".join(classified_sentence2)))
+    hmm.compare_articles(articles[0], articles[1])
     
     
     print "--------------------------------------------------------------------"
@@ -251,34 +263,5 @@ if __name__ == "__main__":
     
     hmm = HMM(4, num_articles, use_clusters=False)
     
-    sentence1 = tuple(articles[0][sentence_num].split())
-    print "CLASSIFYING :\n{0}".format(sentence1)
-    
-    classified_sentence1 = set()
-    groups = hmm.classify_sentence(sentence1)
-    for group in groups:
-        cluster = hmm.clusters[group]
-        for phrase in cluster:
-            for word in phrase:
-                classified_sentence1.add(word)
-        print "ID: {0}\t{1}".format(group, cluster)
-        
-    print "----------------------------------------------------------"   
-    
-    sentence2 = tuple(articles[1][sentence_num].split())
-    print "CLASSIFYING :\n{0}".format(sentence2)
-    
-    classified_sentence2 = set()
-    groups = hmm.classify_sentence(sentence2)
-    for group in groups:
-        cluster = hmm.clusters[group]
-        for phrase in cluster:
-            for word in phrase:
-                classified_sentence2.add(word)
-        print "ID: {0}\t{1}".format(group, cluster)
-        
-    print "----------------------------------------------------------"  
-    
-    print "COSINE OF SENTENCES: {0}".format(cosine(" ".join(sentence1), " ".join(sentence2)))
-    print "COSINE OF CLASSIFIED SENTENCES: {0}".format(cosine(" ".join(classified_sentence1), " ".join(classified_sentence2)))
+    hmm.compare_articles(articles[0], articles[1])
     
