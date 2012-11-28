@@ -90,12 +90,10 @@ class SourceArticles():
         # Add each valid word in each keyword phrase
         for word in kws.split(' '):
             word = word.strip()
-            # TODO: make this better
-            if bool(re.match('[a-z]+$', word, re.IGNORECASE)):
+            if bool(re.match('[a-z]+$', word, re.IGNORECASE)) and word not in STOP_WORDS and len(word) > 2:
                 if (self.stdize_kws):
                     word = self.stdize_word(word)
-                if word not in STOP_WORDS and len(word) > 2:
-                    words.add(word)
+                words.add(word)
                     
         return words
 
@@ -215,13 +213,13 @@ class SourceArticles():
         parsed_sentences = []
 
         for sentence in sentences:
-            discard_sentence = False
-            spin_groups = gen_phrases(sentence)
-
             if is_nested(sentence):
                 continue
-
+                
+            discard_sentence = False
+            spin_groups = gen_phrases(sentence)
             parsed_spin_groups = []
+            
             for spin_group in spin_groups:
                 parsed_spin_group = []
 
@@ -235,9 +233,9 @@ class SourceArticles():
                         words = (self.stdize_word(word) for word in words)
                         
                     words = tuple(words)
-
+                    
+                    # Just discard the whole sentence
                     if self.max_phrase_size and len(words) > self.max_phrase_size:
-                        # Just discard the whole sentence
                         discard_sentence = True
                         
                     #Words tuple may be empty if it's just stopwords
@@ -341,7 +339,7 @@ def gen_phrases(s):
     Makes a set of phrases
     '''
     # TODO: make sure exclude set is OK
-    exclude = set(string.punctuation) - set([' ', '|', '{', '}', '\'', '-'])
+    exclude = set(string.punctuation) - set([' ', '|', '{', '}', '\''])
     s = ''.join(ch for ch in s.lower() if ch not in exclude)
     crude_split = re.split("\{(.+?)\}|(\w+)", s)
 
@@ -379,13 +377,14 @@ def time_function(function_to_time):
 
 if __name__ == "__main__":
     articles = SourceArticles(            
-            #stdizer=PORTER_STEMMER,
+            stdizer=SourceArticles.PORTER_STEMMER,
             omit_stopwords=True,
             stdize_article=True,
+            stdize_kws=True,
             max_phrase_size=None
     )
 
-    '''
+    
     print articles.get_article_sentences(1, article_body="I {like|love} the {dog|canine}. {He doesn't care for|He really does not care for|He really doesn't care for} the dog. She {like|love} the dumb dog")
 
     # Print all keywords
@@ -405,7 +404,7 @@ if __name__ == "__main__":
     print articles.get_similar_articles(313)
 
     print "----------------------------------------------------"
-    '''
+    
     
     article_num = 0
 
