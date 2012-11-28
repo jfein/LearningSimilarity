@@ -2,8 +2,8 @@ from util import SourceArticles, cosine
 import random
 
 
-NUM_POSITIVES = NUM_NEGATIVES = 100
-THRESHOLDS = [x / 100.0 for x in xrange(0, 105, 5)]
+NUM_POSITIVES = NUM_NEGATIVES = 500
+THRESHOLDS = [x / 100.0 for x in xrange(0, 101, 1)]
 
 
 def get_cosines(src_articles):
