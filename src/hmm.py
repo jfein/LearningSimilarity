@@ -33,7 +33,7 @@ class HMM():
         # TODO: count of unknown state???
         self.spin_group_counts = {0:0} # Mapping from spin group ID to number of occurances of that spin group
         
-        self.phrases = set() # Set of all unique phrases
+        self.phrases = {} # Set of all unique phrases
         
         for article_num in range(num_articles):
             sentences = self.src_articles.get_article_sentences(article_num)
@@ -48,7 +48,7 @@ class HMM():
                         sgid = len(self.spin_groups) - 1
                         self.spin_groups_inverse[spin_group] = sgid
                         for phrase in spin_group:
-                            self.phrases.add(phrase)                        
+                            self.phrases[phrase] = self.phrases.get(phrase, []).append(sgid)                      
                     sgid = self.spin_groups_inverse[spin_group]
                     self.spin_group_counts[sgid] = self.spin_group_counts.get(sgid, 0) + 1
                     
@@ -66,10 +66,12 @@ class HMM():
                     
     def transition_prob(self, src_sgid, dest_sgid):
         '''
-        Returns probability that src_sgid will transition to dest_sgid
+        Returns probability that src_sgid will transition to dest_sgid.
+        Uses Witten-Bell smoothing:
+            http://www.ee.columbia.edu/~stanchen/e6884/labs/lab3/x207.html
         '''
         edges_from_src = self.transitions.get(src_sgid, {})
-        # unknown state transitions to all others
+        # "unknown" state transitions to all others
         if src_sgid == 0:
             edges_from_src = self.spin_group_counts
         
@@ -110,6 +112,7 @@ class HMM():
         else:
             return 0.0
             
+    @time_function
     def classify_sentence(self, sentence):
         '''
         Returns the most likely sequence of spin groups that could have generated sentence
