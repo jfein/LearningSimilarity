@@ -25,6 +25,10 @@ class ArticleGroup():
 
     @property
     def svm_ready_examples(self):
+        '''
+        Flattens the examples and removes keyword data.  Replaces actual words
+        with numbers.  Frequencies are converted to floats
+        '''
         if self.svm_ready is None:
             self.svm_ready= []
             for source_data in self.texts.values():
@@ -35,16 +39,21 @@ class ArticleGroup():
                             self.word_dictionary[ex[0]] = self.dict_size
                             self.dict_size += 1
 
-                        numbered_examples[1].append((self.word_dictionary[ex[0]],ex[1]))
+                        numbered_examples[1].append((self.word_dictionary[ex[0]],float(ex[1])))
 
-                numbered_examples[1].sort()
-                self.svm_ready.append(numbered_examples)
-
-            random.shuffle(self.svm_ready)
+                    numbered_examples[1].sort()
+                    self.svm_ready.append(numbered_examples)
 
         return self.svm_ready
 
     def add_example(self, source, keywords, counter):
+        '''
+        Puts a sinlge example article into the internal list of texts.  Source
+        is the integer to index the article under (the index of its spin group),
+        keywords are the keywords unique to this article (may be different than
+        the keywords for the whole article group), and counter are the words in
+        the article.
+        '''
         examples= None
         if source not in self.texts:
             new_source= (keywords, [])
@@ -58,8 +67,23 @@ class ArticleGroup():
         examples.append(new_example)
 
 def create_strict_article_group_from_sa(source_articles, max_classes, max_ex_per_class):
-    ag= ArticleGroup()
+    '''
+    Creates an article group in which no effort is made to ensure that the
+    sources are similar.  Therefore, it should be very easy to separate these
+    classes, because they often do not share certain key words
+    '''
     candidate_articles= range(source_articles.count)
+    return article_group_from_candidates(source_articles, candidate_articles, max_classes,\
+                                        max_ex_per_class)
+
+def article_group_from_candidates(source_articles, candidate_articles, max_classes,\
+                                  max_ex_per_class, keywords=None):
+    '''
+    Takes a number of spun articles (candidate articles) and puts them into an
+    article group.  This involves flattening the sentences and putting them into
+    a counter.  The keywords for the whole article group are also set
+    '''
+    ag= ArticleGroup(keywords)
     random.shuffle(candidate_articles)
     print candidate_articles
     length = 0
@@ -78,8 +102,27 @@ def create_strict_article_group_from_sa(source_articles, max_classes, max_ex_per
 
     return ag
 
-#def create_keyword_article_group_from_sa(source_articles, max_classes,\
-#                                         max_er_per_class, ):
+def create_keyword_article_group_from_sa(source_articles, max_classes,\
+                                         max_ex_per_class, keyword):
+    '''
+    More challenging than the strict group: all members of the article group
+    have at least one keyword in common.  Should be harder to separate
+    '''
+
+    candidate_articles= get_articles_with_shared_keyword(keyword)
+    article_group_from_candidates(source_articles, candidate_articles, max_classes,\
+                                  max_ex_per_class, [keyword])
+
+def create_all_matching_keywords_article_group_from_sa(source_articles, max_classes,\
+                                                       max_ex_per_class, article_num,):
+    '''
+    Most challenging option.  All articles share all keywords.  Should hopefully
+    replicate a realistic situation.
+    '''
+
+    candidate_articles= get_very_similar_articles(article_num)
+    article_group_from_candidates(source_articles, candidate_articles, max_classes,max_ex_per_class,\
+                                  source_articles.get_keywords(article_num))
 
 if __name__ == "__main__":
     sa= SourceArticles()
