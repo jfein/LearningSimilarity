@@ -115,7 +115,7 @@ class SourceArticles():
         '''
         return self.articles[num]['article']
 
-    def spin_article(self, num, article_body=None):
+    def spin_articles(self, num, n=1, article_body=None):
         '''
         Returns a generated spun article. Spun articles are 
         represented as a list of spun sentences. A spun 
@@ -128,16 +128,20 @@ class SourceArticles():
         '''
         article_sentences = self.get_article_sentences(num, article_body)
 
-        spun_sentences = []
-        for sentence in article_sentences:
-            spun_sentence = []
-            for spin_group in sentence:
-                spin_group = list(spin_group)
-                phrase = random.choice(spin_group)
-                spun_sentence.append(" ".join(phrase).strip())
-            spun_sentences.append(" ".join(spun_sentence))
+        spun_articles = []
+        for _ in xrange(n):
+            spun_sentences = []
+            for sentence in article_sentences:
+                spun_sentence = []
+                for spin_group in sentence:
+                    spin_group = list(spin_group)
+                    phrase = random.choice(spin_group)
+                    spun_sentence.append(" ".join(phrase).strip())
+                spun_sentences.append(" ".join(spun_sentence))
 
-        return spun_sentences
+            spun_articles.append(spun_sentences)
+
+        return spun_articles
 
     def spin_dissimilar_articles(self, num, n=1, article_body=None):
         '''        
