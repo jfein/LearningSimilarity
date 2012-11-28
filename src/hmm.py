@@ -1,5 +1,5 @@
 import math
-from util import SourceArticles, cosine
+from util import SourceArticles, cosine, time_function
 
 
 def log(x):
@@ -47,8 +47,11 @@ class HMM():
                         self.spin_groups.append(spin_group)
                         sgid = len(self.spin_groups) - 1
                         self.spin_groups_inverse[spin_group] = sgid
+                        # Map phrases in this spin group to this spin group ID
                         for phrase in spin_group:
-                            self.phrases[phrase] = self.phrases.get(phrase, []).append(sgid)                      
+                            if phrase not in self.phrases:
+                                self.phrases[phrase] = []
+                            self.phrases[phrase].append(sgid)                      
                     sgid = self.spin_groups_inverse[spin_group]
                     self.spin_group_counts[sgid] = self.spin_group_counts.get(sgid, 0) + 1
                     
@@ -181,7 +184,7 @@ class HMM():
 
         
 if __name__ == "__main__":
-    hmm = HMM(4, 1000)
+    hmm = HMM(4, 10)
     
     for sgid, spin_group in enumerate(hmm.spin_groups):
         print "{0} : {1}".format(sgid, spin_group)
