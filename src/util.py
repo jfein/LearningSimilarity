@@ -285,7 +285,7 @@ class SourceArticles():
         Returns a list of articles that share the 
         given keyword
         '''
-        return self.keywords.get(keyword)
+        return self.keywords[keyword]
 
 
     def get_very_similar_articles(self, num):

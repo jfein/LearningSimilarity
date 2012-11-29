@@ -29,8 +29,13 @@ def subsets(train, folds):
 
     train_sets= []
     validate_sets= []
-    chunk_size= len(train) / folds
-    chunks= [train[i:i+chunk_size] for i in range(0, len(train), chunk_size)]
+
+    #size of test_set arbitrarily set to 30% of input
+    test_set= train[0: .3*len(train)]
+    remainder= train[.3*len(train):len(train)]
+
+    chunk_size= len(remainder) / folds
+    chunks= [remainder[i:i+chunk_size] for i in range(0, len(remainder), chunk_size)]
 
     for i in range(len(chunks)):
         validate_sets.append(chunks[i])
@@ -41,7 +46,7 @@ def subsets(train, folds):
 
         train_sets.append(temp)
 
-    return train_sets, validate_sets
+    return train_sets, validate_sets, test_set
 
 def create_classifications(models, test_set):
     '''
@@ -53,6 +58,43 @@ def create_classifications(models, test_set):
         classifications[m]= svmlight.classify(models[m], test_set)
 
     return classifications
+
+def find_best(ag, c_values, thresholds):
+    for threshold in thresholds:
+        best_c_value= 0
+        best_acc= 0
+        train_sets, validation_sets, test_set= subsets(ag.svm_ready_examples)
+
+        #find the best c value through brute force
+        for c in c_values:
+            acc= five_fold_validation_check_same_source(train_sets, validation_sets,\
+                                                       c, threshold)
+            if acc > best_acc:
+                best_acc= acc
+                best_c_value= c
+
+        #now combine the validation and traning data
+        true_training= validation_sets[0]+train_sets[0]
+
+        #retrain the model, try the models on the test set and report results
+        models= find_models(true_training, best_c_value)
+        classifications= create_classifications(models, test_set)
+        accuracy, false_plus, false_minus= get_accuracy_for_same_source\
+                (classifications, threshold, test_set)
+
+        return accuracy, false_plus, false_minus, best_c_value
+
+def get_accuracy_for_same_source(classifications, threshold, test_data):
+    predictions= predictions_from_classifications(classifications, threshold)
+
+    true_classifications= []
+    for ex in test_data:
+        true_classifications.append(ex[0])
+
+    predicted_sim_pairs= create_similarity_pairs(predictions)
+    actual_sim_pairs= create_similarity_pairs(true_classifications)
+
+    return find_accuracy(actual_sim_pairs, predicted_sim_pairs)
 
 def five_fold_validation_check_same_source(training_sets, validation_sets,\
                                           c_value, thresholds):
@@ -70,16 +112,8 @@ def five_fold_validation_check_same_source(training_sets, validation_sets,\
         best_accuracy= 0.0
         for threshold in thresholds:
 
-            predictions= predictions_from_classifications(classifications, threshold)
-
-            true_classifications= []
-            for ex in validation_sets[i]:
-                true_classifications.append(ex[0])
-
-            predicted_sim_pairs= create_similarity_pairs(predictions)
-            actual_sim_pairs= create_similarity_pairs(true_classifications)
-
-            accuracy= find_accuracy(actual_sim_pairs, predicted_sim_pairs)
+            accuracy= get_accuracy_for_same_source(classifications, threshold,
+                                                   validation_sets[i])
             print "accuracy for threshold " + str(threshold) + "= " +\
             str(accuracy)
 
