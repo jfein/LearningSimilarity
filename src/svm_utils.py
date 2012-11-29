@@ -122,7 +122,6 @@ def predictions_from_classifications(classifications, threshold):
     num_examples= 0
     #this is bad, but I don't really know python that well lol
     num_examples= len(classifications[classifications.keys()[0]])
-    print "pfc num examples= "+ str(num_examples)
 
     for example in xrange(num_examples):
         best_value= 0
@@ -132,11 +131,10 @@ def predictions_from_classifications(classifications, threshold):
                 best_value= classifications[classification_index][example]
                 best_index= classification_index
 
-        print best_value
         if best_value < threshold:
             best_index= None
 
-        predictions.append((best_index, best_value))
+        predictions.append(best_index)
 
     return predictions
 
