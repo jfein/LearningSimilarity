@@ -108,6 +108,16 @@ class SourceArticles():
         '''
         return self.articles[num]['keywords']
 
+    def get_all_keywords(self):
+        '''
+        Returns a set of keywords across all articles
+        '''
+        all_keywords= set()
+        for key in self.keywords.keys():
+            all_keywords= all_keywords.union(self.keywords[key])
+
+        return all_keywords
+
     def get_title(self, num):
         '''
         Returns article num's title
