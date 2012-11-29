@@ -1,10 +1,10 @@
 import math, random
+import os.path
 from util import SourceArticles, cosine, time_function
 from hac import improved_hac
-import time
+import time, json
 import cPickle as pickle
 
-MAX_ARTICLE_NUM = 2500
 
 def log(x):
     if x <= 0:
@@ -56,7 +56,7 @@ class HMM():
 
         start = time.time()
 
-        if use_pickled:
+        if use_pickled and os.path.isfile(pickle_filename):
             f = open(pickle_filename, 'rb')
             hmm_state = pickle.load(f)
             f.close()
@@ -68,13 +68,12 @@ class HMM():
             self.CHe = hmm_state.CHe
             self.Ne = hmm_state.Ne
             self.phrases = hmm_state.phrases
-
         else:
             self.build_hmm(num_articles, use_clusters)
 
         print "Building hmm took {0} seconds".format(time.time() - start)
 
-        if pickle_output:
+        if pickle_output and not use_pickled:
             hmm_state = HMM_State(self.sgid_to_cid,
                                   self.clusters,
                                   self.cluster_counts,
@@ -188,7 +187,6 @@ class HMM():
         else:
             return 0.0
 
-
     def classify_sentence(self, sentence):
         '''
         Returns the most likely sequence of spin groups that could have generated sentence
@@ -254,7 +252,6 @@ class HMM():
         sgs.reverse()
         return sgs
 
-
     @time_function
     def classify_article(self, article):
         '''
@@ -268,6 +265,10 @@ class HMM():
         return spin_groups
 
     def classify_article_formatted(self, article):
+        '''
+        article is list of sentence strings.
+        returns article as list of words and classified_article as list of words
+        '''
         classified_article_groups = hmm.classify_article(article)
 
         classified_article = []
@@ -282,6 +283,10 @@ class HMM():
         return (article , classified_article)
         
     def get_comparison_stats(self, article1, article2, classified_article1, classified_article2, do_print=True):
+        '''
+        returns cosine of all possible things
+        of two articles and their comparisons
+        '''
         a1_a2 = cosine(" ".join(article1), " ".join(article2))
         ca1_ca2 = cosine(" ".join(classified_article1), " ".join(classified_article2))
         a1_ca1 = cosine(" ".join(classified_article1), " ".join(article1))
@@ -298,6 +303,7 @@ class HMM():
         return (a1_a2, ca1_ca2, a1_ca1, a2_ca2, a1_ca2, a2_ca1)
         
         
+        
 if __name__ == "__main__":
     num_articles = 250
     
@@ -309,99 +315,154 @@ if __name__ == "__main__":
              pickle_filename="test.pickle",
              )
     
-    # Want to analyze 1 pair of very similar odd numbered source articles
-    # Each pair will do 6 classifications (~450 seconds each), making 6 positive examples and 9 negative examples
-    sa1 = None
-    sa2 = None
-    while not sa1 or not sa2:
-        sa1 = random.randint(0, hmm.src_articles.count - 1)
-        similar_articles = list(hmm.src_articles.get_very_similar_articles(sa1))
-        if not similar_articles:
-            continue
-        sa2 = random.choice(similar_articles)
-        if sa1 % 2 == 0 or sa2 % 2 == 0:
-            sa1 = None
-            sa2 = None
-            
-    print "\nUSING SOURCE ARTICLE #{0} AND SOURCE ARTICLE #{1}\n".format(sa1, sa2)
+    file = open("res{0}.dat".format(time.time()), 'w')
     
-    #TODO: look at 202 sentence 1
-    articles_a = hmm.src_articles.spin_dissimilar_articles(sa1, 3)
-    articles_b = hmm.src_articles.spin_dissimilar_articles(sa2, 3)
+    for _ in range(4):
+        # Want to analyze pair of very similar odd numbered source articles
+        # Both articles will do generate 4 articles and do 4 classifications
+        # Makes 12 positive examples and 15 negative examples
+        sa1 = None
+        sa2 = None
+        while not sa1 or not sa2:
+            sa1 = random.randint(0, hmm.src_articles.count - 1)
+            similar_articles = list(hmm.src_articles.get_very_similar_articles(sa1))
+            if not similar_articles:
+                continue
+            sa2 = random.choice(similar_articles)
+            if sa1 % 2 == 0 or sa2 % 2 == 0:
+                sa1 = None
+                sa2 = None
     
-    (article_a0 , classified_article_a0) = hmm.classify_article_formatted(articles_a[0])
-    (article_a1 , classified_article_a1) = hmm.classify_article_formatted(articles_a[1])
-    (article_a2 , classified_article_a2) = hmm.classify_article_formatted(articles_a[2])
+        print "---------------------------------------------------------------------------------------------------------"     
+        print "USING SOURCE ARTICLE #{0} AND SOURCE ARTICLE #{1}\n".format(sa1, sa2)   
+        
+        #TODO: look at 202 sentence 1
+        articles_a = hmm.src_articles.spin_dissimilar_articles(sa1, 2) + hmm.src_articles.spin_dissimilar_articles(sa1, 2)
+        articles_b = hmm.src_articles.spin_dissimilar_articles(sa2, 2) + hmm.src_articles.spin_dissimilar_articles(sa2, 2)
+        
+        (article_a0 , classified_article_a0) = hmm.classify_article_formatted(articles_a[0])
+        (article_a1 , classified_article_a1) = hmm.classify_article_formatted(articles_a[1])
+        (article_a2 , classified_article_a2) = hmm.classify_article_formatted(articles_a[2])
+        (article_a3 , classified_article_a3) = hmm.classify_article_formatted(articles_a[3])
+        
+        (article_b0 , classified_article_b0) = hmm.classify_article_formatted(articles_b[0])
+        (article_b1 , classified_article_b1) = hmm.classify_article_formatted(articles_b[1])
+        (article_b2 , classified_article_b2) = hmm.classify_article_formatted(articles_b[2])
+        (article_b3 , classified_article_b3) = hmm.classify_article_formatted(articles_b[3])    
+        
+        positive = []
+        negative = []
+        
+        print "--------------------------------------------------------------------" 
+        print "--------------------------------------------------------------------" 
+        
+        print "SIMILAR ARTICLES A0, A1:\n"
+        positive.append(hmm.get_comparison_stats(article_a0, article_a1, classified_article_a0, classified_article_a1))
+        print
+        print "SIMILAR ARTICLES A0, A2:\n"
+        positive.append(hmm.get_comparison_stats(article_a0, article_a2, classified_article_a0, classified_article_a2))
+        print
+        print "SIMILAR ARTICLES A0, A3:\n"
+        positive.append(hmm.get_comparison_stats(article_a0, article_a3, classified_article_a0, classified_article_a3))
+        print
+        print "SIMILAR ARTICLES A1, A2:\n"
+        positive.append(hmm.get_comparison_stats(article_a1, article_a2, classified_article_a1, classified_article_a2))
+        print
+        print "SIMILAR ARTICLES A1, A3:\n"
+        positive.append(hmm.get_comparison_stats(article_a1, article_a3, classified_article_a1, classified_article_a3))
+        print
+        print "SIMILAR ARTICLES A2, A3:\n"
+        positive.append(hmm.get_comparison_stats(article_a2, article_a3, classified_article_a2, classified_article_a3))
+        print
+        
+        print "SIMILAR ARTICLES B0, B1:\n"
+        positive.append(hmm.get_comparison_stats(article_b0, article_b1, classified_article_b0, classified_article_b1))
+        print
+        print "SIMILAR ARTICLES B0, B2:\n"
+        positive.append(hmm.get_comparison_stats(article_b0, article_b2, classified_article_b0, classified_article_b2))
+        print
+        print "SIMILAR ARTICLES B0, B3:\n"
+        positive.append(hmm.get_comparison_stats(article_b0, article_b3, classified_article_b0, classified_article_b3))
+        print
+        print "SIMILAR ARTICLES B1, B2:\n"
+        positive.append(hmm.get_comparison_stats(article_b1, article_b2, classified_article_b1, classified_article_b2))
+        print
+        print "SIMILAR ARTICLES B1, B3:\n"
+        positive.append(hmm.get_comparison_stats(article_b1, article_b3, classified_article_b1, classified_article_b3))
+        print
+        print "SIMILAR ARTICLES B2, B3:\n"
+        positive.append(hmm.get_comparison_stats(article_b2, article_b3, classified_article_b2, classified_article_b3))
+        print
+        
+        print "--------------------------------------------------------------------" 
+       
+        print "NOT SIMILAR ARTICLES A0, B0:\n"
+        negative.append(hmm.get_comparison_stats(article_a0, article_b0, classified_article_a0, classified_article_b0))
+        print
+        print "NOT SIMILAR ARTICLES A0, B1:\n"
+        negative.append(hmm.get_comparison_stats(article_a0, article_b1, classified_article_a0, classified_article_b1))
+        print
+        print "NOT SIMILAR ARTICLES A0, B2:\n"
+        negative.append(hmm.get_comparison_stats(article_a0, article_b2, classified_article_a0, classified_article_b2))
+        print
+        print "NOT SIMILAR ARTICLES A0, B3:\n"
+        negative.append(hmm.get_comparison_stats(article_a0, article_b3, classified_article_a0, classified_article_b3))
+        print
+        
+        print "NOT SIMILAR ARTICLES A1, B0:\n"
+        negative.append(hmm.get_comparison_stats(article_a1, article_b0, classified_article_a1, classified_article_b0))
+        print
+        print "NOT SIMILAR ARTICLES A1, B1:\n"
+        negative.append(hmm.get_comparison_stats(article_a1, article_b1, classified_article_a1, classified_article_b1))
+        print
+        print "NOT SIMILAR ARTICLES A1, B2:\n"
+        negative.append(hmm.get_comparison_stats(article_a1, article_b2, classified_article_a1, classified_article_b2))
+        print
+        print "NOT SIMILAR ARTICLES A1, B3:\n"
+        negative.append(hmm.get_comparison_stats(article_a1, article_b3, classified_article_a1, classified_article_b3))
+        print
+        
+        print "NOT SIMILAR ARTICLES A2, B0:\n"
+        negative.append(hmm.get_comparison_stats(article_a2, article_b0, classified_article_a2, classified_article_b0))
+        print
+        print "NOT SIMILAR ARTICLES A2, B1:\n"
+        negative.append(hmm.get_comparison_stats(article_a2, article_b1, classified_article_a2, classified_article_b1))
+        print
+        print "NOT SIMILAR ARTICLES A2, B2:\n"
+        negative.append(hmm.get_comparison_stats(article_a2, article_b2, classified_article_a2, classified_article_b2))
+        print
+        print "NOT SIMILAR ARTICLES A2, B3:\n"
+        negative.append(hmm.get_comparison_stats(article_a2, article_b3, classified_article_a2, classified_article_b3))
+        print
+        
+        print "NOT SIMILAR ARTICLES A3, B0:\n"
+        negative.append(hmm.get_comparison_stats(article_a3, article_b0, classified_article_a3, classified_article_b0))
+        print
+        print "NOT SIMILAR ARTICLES A3, B1:\n"
+        negative.append(hmm.get_comparison_stats(article_a3, article_b1, classified_article_a3, classified_article_b1))
+        print
+        print "NOT SIMILAR ARTICLES A3, B2:\n"
+        negative.append(hmm.get_comparison_stats(article_a3, article_b2, classified_article_a3, classified_article_b2))
+        print
+        print "NOT SIMILAR ARTICLES A3, B3:\n"
+        negative.append(hmm.get_comparison_stats(article_a3, article_b3, classified_article_a3, classified_article_b3))
+        print
+        
+        print "--------------------------------------------------------------------" 
+        print "--------------------------------------------------------------------" 
+        
+        print "POSITIVES:\n"
+        print positive
+        
+        print
+        
+        print "NEGATIVES:\n"
+        print negative
+        
+        positive = json.dumps(positive)
+        negative = json.dumps(negative)
+        file.write("{sa1}\t{sa2}\t{positive}\t{negative}\n".format(**locals()))
+        
+    file.close()
     
-    (article_b0 , classified_article_b0) = hmm.classify_article_formatted(articles_b[0])
-    (article_b1 , classified_article_b1) = hmm.classify_article_formatted(articles_b[1])
-    (article_b2 , classified_article_b2) = hmm.classify_article_formatted(articles_b[2])
-    
-    positive = []
-    negative = []
-    
-    print "--------------------------------------------------------------------" 
-    print "--------------------------------------------------------------------" 
-            
-    print "SIMILAR ARTICLES A0, A1:\n"
-    positive.append(hmm.get_comparison_stats(article_a0, article_a1, classified_article_a0, classified_article_a1))
-    print
-    print "SIMILAR ARTICLES A0, A2:\n"
-    positive.append(hmm.get_comparison_stats(article_a0, article_a2, classified_article_a0, classified_article_a2))
-    print
-    print "SIMILAR ARTICLES A1, A2:\n"
-    positive.append(hmm.get_comparison_stats(article_a1, article_a2, classified_article_a1, classified_article_a2))
-    print
-    
-    print "SIMILAR ARTICLES B0, B1:\n"
-    positive.append(hmm.get_comparison_stats(article_b0, article_b1, classified_article_b0, classified_article_b1))
-    print
-    print "SIMILAR ARTICLES B0, B2:\n"
-    positive.append(hmm.get_comparison_stats(article_b0, article_b2, classified_article_b0, classified_article_b2))
-    print
-    print "SIMILAR ARTICLES B1, B2:\n"
-    positive.append(hmm.get_comparison_stats(article_b1, article_b2, classified_article_b1, classified_article_b2))
-    print
-    
-    print "--------------------------------------------------------------------" 
-   
-    print "NOT SIMILAR ARTICLES A0, B0:\n"
-    negative.append(hmm.get_comparison_stats(article_a0, article_b0, classified_article_a0, classified_article_b0))
-    print
-    print "NOT SIMILAR ARTICLES A0, B1:\n"
-    negative.append(hmm.get_comparison_stats(article_a0, article_b1, classified_article_a0, classified_article_b1))
-    print
-    print "NOT SIMILAR ARTICLES A0, B2:\n"
-    negative.append(hmm.get_comparison_stats(article_a0, article_b2, classified_article_a0, classified_article_b2))
-    print
-    
-    print "NOT SIMILAR ARTICLES A1, B0:\n"
-    negative.append(hmm.get_comparison_stats(article_a1, article_b0, classified_article_a1, classified_article_b0))
-    print
-    print "NOT SIMILAR ARTICLES A1, B1:\n"
-    negative.append(hmm.get_comparison_stats(article_a1, article_b1, classified_article_a1, classified_article_b1))
-    print
-    print "NOT SIMILAR ARTICLES A1, B2:\n"
-    negative.append(hmm.get_comparison_stats(article_a1, article_b2, classified_article_a1, classified_article_b2))
-    print
-    
-    print "NOT SIMILAR ARTICLES A0, B0:\n"
-    negative.append(hmm.get_comparison_stats(article_a2, article_b0, classified_article_a2, classified_article_b0))
-    print
-    print "NOT SIMILAR ARTICLES A0, B1:\n"
-    negative.append(hmm.get_comparison_stats(article_a2, article_b1, classified_article_a2, classified_article_b1))
-    print
-    print "NOT SIMILAR ARTICLES A0, B2:\n"
-    negative.append(hmm.get_comparison_stats(article_a2, article_b2, classified_article_a2, classified_article_b2))
-    print
-    
-    print "--------------------------------------------------------------------" 
-    print "--------------------------------------------------------------------" 
-    
-    print "POSITIVES:\n"
-    print positive
-    
-    print
-    
-    print "NEGATIVES:\n"
-    print negative
+    print "FINISHED"
