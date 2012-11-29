@@ -3,6 +3,7 @@ from svm_utils import subsets, five_fold_validation_check_same_source,\
 from article_group import ArticleGroup, create_all_matching_keywords_article_group_from_sa
 from util import SourceArticles
 
+value = 3
 thresholds= [0]
 c_values= [.001, .01, .1, 1, 5, 10]
 #c_values= [.01, .1]
@@ -22,7 +23,7 @@ def get_results(ag, label):
 sa= SourceArticles()
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -35,7 +36,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(omit_stopwords=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -47,7 +48,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(stdize_article=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -59,7 +60,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(stdize_kws=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -71,7 +72,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(replace_with_synonyms=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -83,7 +84,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(omit_stopwords=True, stdize_article=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -95,7 +96,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(omit_stopwords=True, stdize_kws=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -107,7 +108,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(omit_stopwords=True, replace_with_synonyms=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -120,7 +121,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, stdize_kws = True, replace_with_synonyms=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -132,7 +133,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(stdize_article=True, stdize_kws=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -144,7 +145,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(stdize_article=True, stdize_kws=True, replace_with_synonyms=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -156,7 +157,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(stdize_article=True, replace_with_synonyms=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -168,7 +169,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(stdize_kws=True, replace_with_synonyms=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -181,7 +182,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(omit_stopwords=True, stdize_kws = True, replace_with_synonyms=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -193,7 +194,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, replace_with_synonyms=True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
@@ -205,7 +206,7 @@ for i in xrange(sa.count):
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, stdize_kws = True)
 for i in xrange(sa.count):
   ag= create_all_matching_keywords_article_group_from_sa(sa, 1000, 200, i)
-  if ag.count_sources > 8:
+  if ag.count_sources > value:
     keyword_list= ""
     for word in list(sa.get_keywords(i)):
       keyword_list+= " " + word
