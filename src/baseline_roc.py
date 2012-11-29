@@ -21,8 +21,8 @@ def get_cosines(src_articles):
         if not similar_articles:
             continue
         num2 = random.choice(similar_articles)
-        a1 = " ".join(src_articles.spin_article(num1))
-        a2 = " ".join(src_articles.spin_article(num2))
+        a1 = " ".join(src_articles.spin_articles(num1)[0])
+        a2 = " ".join(src_articles.spin_articles(num2)[0])
         negative_cosines.append(cosine(a1, a2))
 
     return positive_cosines, negative_cosines
@@ -55,7 +55,8 @@ def baseline_roc():
 
     for threshold in THRESHOLDS:
         tp_rate, fp_rate = calculate_tp_fp(positive_cosines, negative_cosines, threshold)
-        print "{threshold}\n\tTP RATE : {tp_rate}\n\tFP RATE : {fp_rate}".format(**locals())
+        #print "{threshold}\n\tTP RATE : {tp_rate}\n\tFP RATE : {fp_rate}".format(**locals())
+        print "{threshold}\t{tp_rate}\t{fp_rate}".format(**locals())
 
 
 if __name__ == "__main__":
