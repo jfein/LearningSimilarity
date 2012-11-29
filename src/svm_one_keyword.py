@@ -22,7 +22,7 @@ def get_results(ag, label):
 def try_each(label):
     for kw in keywords_to_use:
         ag= create_keyword_article_group_from_sa(sa, 1000, 200, kw)
-        if ag.count_sources > 2:
+        if ag.count_sources > 3:
             get_results(ag, label+ " with keyword: " + kw)
 
 
