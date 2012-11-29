@@ -3,17 +3,21 @@ from article_group import ArticleGroup, create_strict_article_group_from_sa
 from util import SourceArticles
 
 thresholds= [0]
-c_values= [.125]
+c_values= [.0001, .001, .001,]
 
 sa= SourceArticles()
 ag= create_strict_article_group_from_sa(sa, 1000, 20)
+get_results(ag, "Something about test")
 
-#normalized_examples= normalize(ag.svm_ready_examples)
-train_sets, validate_sets= subsets(ag.svm_ready_examples, 5)
+#repeat many times...
+sa= SourceArticles(something=True)
+ag= create_strict_article_group_from_sa(sa, 1000, 20)
+get_results(ag, "about test")
 
-print "validate size= " + str(len(validate_sets[0]))
-print "train size= " + str(len(train_sets[0]))
 
-for c_value in c_values:
-    print five_fold_validation_check_same_source(train_sets, validate_sets,\
-                                                 c_value, thresholds)
+def get_results(ag, label):
+  accuracy, false_postives, false_negatives, c_value= find_best(ag, c_values,\
+                                                                thresholds)
+  print ""
+  #print stuff here
+  print ""
