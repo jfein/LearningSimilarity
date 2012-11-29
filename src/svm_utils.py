@@ -31,8 +31,8 @@ def subsets(train, folds):
     validate_sets= []
 
     #size of test_set arbitrarily set to 30% of input
-    test_set= train[0: .3*len(train)]
-    remainder= train[.3*len(train):len(train)]
+    test_set= train[0: int(.3*len(train))]
+    remainder= train[int(.3*len(train)):len(train)]
 
     chunk_size= len(remainder) / folds
     chunks= [remainder[i:i+chunk_size] for i in range(0, len(remainder), chunk_size)]
@@ -63,12 +63,12 @@ def find_best(ag, c_values, thresholds):
     for threshold in thresholds:
         best_c_value= 0
         best_acc= 0
-        train_sets, validation_sets, test_set= subsets(ag.svm_ready_examples)
+        train_sets, validation_sets, test_set= subsets(ag.svm_ready_examples, 5)
 
         #find the best c value through brute force
         for c in c_values:
             acc= five_fold_validation_check_same_source(train_sets, validation_sets,\
-                                                       c, threshold)
+                                                       c, [threshold])
             if acc > best_acc:
                 best_acc= acc
                 best_c_value= c
