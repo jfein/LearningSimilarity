@@ -269,11 +269,11 @@ class HMM():
         article is list of sentence strings.
         returns article as list of words and classified_article as list of words
         '''
-        classified_article_groups = hmm.classify_article(article)
+        classified_article_groups = self.classify_article(article)
 
         classified_article = []
         for group in classified_article_groups:
-            cluster = hmm.clusters[group]
+            cluster = self.clusters[group]
             for phrase in cluster:
                 for word in phrase:
                     classified_article.append(word)
