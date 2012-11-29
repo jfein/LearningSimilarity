@@ -91,15 +91,8 @@ class HMM():
         self.spin_groups_inverse = {frozenset():0}  # Mapping from spin group to spin group ID
         self.phrases = {} # Set of all unique phrases
 
-
-        article_num = random.randint(0, MAX_ARTICLE_NUM / 2) * 2
-        used_articles = []
-
         # First pass through articles to get all unique spin groups
-        for _ in range(num_articles):
-            article_num = (article_num + 2) % MAX_ARTICLE_NUM
-            used_articles.append(article_num)
-
+        for article_num in random.sample([x*2 for x in range((self.src_articles.count+2)/2)], num_articles):
             for sentence in self.src_articles.get_article_sentences(article_num):
                 for spin_group in sentence:
                     if spin_group not in self.spin_groups_inverse:
@@ -120,12 +113,8 @@ class HMM():
         self.transitions = {}  # Mapping rom spin group ID to dict of spgid to counts
         self.cluster_counts = {0:0} # Mapping from spin group ID to number of occurances of that spin group
 
-        # Second pass through articles to get transition probabilities
-        for article_num in range(self.src_articles.count):
-            # Only look at even articles
-            if article_num % 2 != 0:
-                pass
-                
+        # Second pass through even articles to get transition probabilities
+        for article_num in [x*2 for x in range((self.src_articles.count+2)/2)]:  
             for sentence in self.src_articles.get_article_sentences(article_num):
                 prev_cid = None
                 for spin_group in sentence:
