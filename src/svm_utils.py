@@ -182,6 +182,7 @@ def find_models(examples, c_value):
     for example in examples:
         class_num = example[0]
         if class_num not in learned_classes:
+            print class_num
             train= change_to_binary_examples(examples, class_num)
             models[class_num]= svmlight.learn(train, type='classification', C=c_value)
             learned_classes[class_num] = 1
@@ -236,3 +237,111 @@ def find_accuracy(real_classes, classifications):
 
     accuracy= (true_plus+true_minus)/len(real_classes)
     return (accuracy, false_plus, false_minus)
+
+def concatenated_pairs(examples):
+    concatenated_ps= []
+    for ex in examples:
+        for other_ex in examples:
+            #hack to reduce number of examples
+            #if random.randrange(100) != 0:
+            #    continue
+
+            class_label = -1
+            if ex[0]  == other_ex[0]:
+                class_label= 1
+
+            new_example= (class_label, [])
+
+            #merge the examples
+            feat1= ex[1]
+            feat2= other_ex[1]
+            feat2_pos= 0
+            for feat1_pos in xrange(len(feat1)):
+                #insert features from feat2
+                while feat2_pos < len(feat2) and feat2[feat2_pos][0] < feat1[feat1_pos][0]:
+                    new_example[1].append(feat2[feat2_pos])
+                    feat2_pos += 1
+
+                #concatenate identical features
+                if feat2_pos < len(feat2) and feat2[feat2_pos][0] == feat1[feat1_pos][0]:
+                    new_example[1].append((feat2[feat2_pos][0],\
+                                           feat1[feat1_pos][1]\
+                                           + feat2[feat2_pos][1]))
+                #add feature from feat1
+                else:
+                    new_example[1].append(feat1[feat1_pos])
+
+            #append remaining features from 2
+            while feat2_pos < len(feat2):
+                new_example[1].append(feat2[feat2_pos])
+                feat2_pos += 1
+
+            concatenated_ps.append(new_example)
+
+    return concatenated_ps
+
+
+def find_best_pair_test(ag, c_values, thresholds):
+    for threshold in thresholds:
+        best_c_value= 0
+        best_acc= 0
+        concatenate_ps= concatenated_pairs(ag.svm_ready_examples)
+        train_sets, validation_sets, test_set= subsets(concatenate_ps, 5)
+
+        #find the best c value through brute force
+        for c in c_values:
+            acc= five_fold_validation_check_pair_test(train_sets, validation_sets,\
+                                                       c, [threshold])
+            if acc > best_acc:
+                best_acc= acc
+                best_c_value= c
+
+        #now combine the validation and traning data
+        true_training= validation_sets[0]+train_sets[0]
+
+        #retrain the model, try the models on the test set and report results
+        models= find_models(true_training, best_c_value)
+        classifications= create_classifications(models, test_set)
+        accuracy, false_plus, false_minus= get_accuracy_for_pair_test\
+                (classifications, threshold, test_set)
+
+        return accuracy, false_plus, false_minus, best_c_value
+
+def get_accuracy_for_pair_test(classifications, threshold, test_data):
+    predictions= predictions_from_classifications(classifications, threshold)
+
+    #print "predictions= " + str(predictions)
+
+    true_labels= []
+    for ex in test_data:
+        true_labels.append(ex[0])
+
+    return find_accuracy(true_labels, predictions)
+
+def five_fold_validation_check_pair_test(training_sets, validation_sets,\
+                                          c_value, thresholds):
+    '''
+    Performs five fold validation using the supplied training and validation
+    sets.  Tries each value in thresholds and uses whichever gives the best
+    result. Returns the average accuracy across all training sets
+    '''
+    total_accuracy= 0.0
+    for i in xrange(len(training_sets)):
+        models= find_models(training_sets[i], c_value)
+        classifications= create_classifications(models, validation_sets[i])
+
+        #try the various thresholds and use whichever works best
+        best_accuracy= 0.0
+        for threshold in thresholds:
+
+            accuracy= get_accuracy_for_pair_test(classifications, threshold,
+                                                   validation_sets[i])
+            print "accuracy for threshold " + str(threshold) + "= " +\
+            str(accuracy)
+
+            if accuracy[0] > best_accuracy:
+                best_accuracy= accuracy[0]
+
+        total_accuracy += best_accuracy
+
+    return total_accuracy/len(training_sets)

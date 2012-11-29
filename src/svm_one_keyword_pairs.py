@@ -1,15 +1,14 @@
 from svm_utils import subsets, five_fold_validation_check_same_source,\
-        normalize, find_best
-from article_group import ArticleGroup, create_strict_article_group_from_sa
+        normalize, find_best_pair_test
+from article_group import ArticleGroup, create_keyword_article_group_from_sa
 from util import SourceArticles
 
 thresholds= [0]
 c_values= [.001, .01, .1, 1, 5, 10]
-#c_values= [.01, .1]
+keywords_to_use= list(SourceArticles().get_all_keywords())
 
-def get_results(sa, label):
-  ag= create_strict_article_group_from_sa(sa, 1000, 20)
-  accuracy, false_positives, false_negatives, c_value= find_best(ag, c_values,\
+def get_results(ag, label):
+  accuracy, false_positives, false_negatives, c_value= find_best_pair_test(ag, c_values,\
                                                                 thresholds)
   print ""
   #print stuff here
@@ -20,55 +19,62 @@ def get_results(sa, label):
   print "c_value: " + str(c_value)
   print ""
 
+def try_each(label):
+    for kw in keywords_to_use:
+        ag= create_keyword_article_group_from_sa(sa, 1000, 5, kw)
+        if ag.count_sources > 3:
+            get_results(ag, label+ " with keyword: " + kw)
+
+
 sa= SourceArticles()
-get_results(ag, "No specials")
+try_each("No specials")
 
 #repeat many times...
 sa= SourceArticles(omit_stopwords=True)
-get_results(sa, "Stopwords only")
+try_each("Stopwords only")
 
 sa= SourceArticles(stdize_article=True)
-get_results(sa, "Stdize only")
+try_each("Stdize only")
 
 sa= SourceArticles(stdize_kws=True)
-get_results(sa, "keywords only")
+try_each("keywords only")
 
 sa= SourceArticles(replace_with_synonyms=True)
-get_results(sa, "Synonyms only")
+try_each("Synonyms only")
 
 sa= SourceArticles(omit_stopwords=True, stdize_article=True)
-get_results(sa, "Stopwords and stdize")
+try_each("Stopwords and stdize")
 
 
 sa= SourceArticles(omit_stopwords=True, stdize_kws=True)
-get_results(sa, "Stopwords and kws")
+try_each("Stopwords and kws")
 
 sa= SourceArticles(omit_stopwords=True, replace_with_synonyms=True)
-get_results(sa, "Stopwords and synonyms")
+try_each("Stopwords and synonyms")
 
 
 
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, stdize_kws = True, replace_with_synonyms=True)
-get_results(sa, "everything")
+try_each("everything")
 
 sa= SourceArticles(stdize_article=True, stdize_kws=True)
-get_results(sa, "stdize and kws")
+try_each("stdize and kws")
 
 sa= SourceArticles(stdize_article=True, stdize_kws=True, replace_with_synonyms=True)
-get_results(sa, "not stopwords")
+try_each("not stopwords")
 
 sa= SourceArticles(stdize_article=True, replace_with_synonyms=True)
-get_results(sa, "Stdize and synonyms")
+try_each("Stdize and synonyms")
 
 sa= SourceArticles(stdize_kws=True, replace_with_synonyms=True)
-get_results(sa, "kws and synonyms")
+try_each("kws and synonyms")
 
 
 sa= SourceArticles(omit_stopwords=True, stdize_kws = True, replace_with_synonyms=True)
-get_results(sa, "not stdize")
+try_each("not stdize")
 
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, replace_with_synonyms=True)
-get_results(sa, "not kws")
+try_each("not kws")
 
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, stdize_kws = True)
-get_results(sa, "not synonyms")
+try_each("not synonyms")

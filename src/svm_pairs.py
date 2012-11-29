@@ -1,5 +1,5 @@
 from svm_utils import subsets, five_fold_validation_check_same_source,\
-        normalize, find_best
+        normalize, find_best_pair_test
 from article_group import ArticleGroup, create_strict_article_group_from_sa
 from util import SourceArticles
 
@@ -8,8 +8,8 @@ c_values= [.001, .01, .1, 1, 5, 10]
 #c_values= [.01, .1]
 
 def get_results(sa, label):
-  ag= create_strict_article_group_from_sa(sa, 1000, 20)
-  accuracy, false_positives, false_negatives, c_value= find_best(ag, c_values,\
+  ag= create_strict_article_group_from_sa(sa, 1000, 5)
+  accuracy, false_positives, false_negatives, c_value= find_best_pair_test(ag, c_values,\
                                                                 thresholds)
   print ""
   #print stuff here
