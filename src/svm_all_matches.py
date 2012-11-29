@@ -4,7 +4,7 @@ from article_group import ArticleGroup, create_all_matching_keywords_article_gro
 from util import SourceArticles
 
 thresholds= [0]
-c_values= [.0001, .001, .01, .1, 1, 5, 10]
+c_values= [.001, .01, .1, 1, 5, 10]
 #c_values= [.01, .1]
 
 def get_results(ag, label):
