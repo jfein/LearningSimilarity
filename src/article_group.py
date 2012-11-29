@@ -85,7 +85,6 @@ def article_group_from_candidates(source_articles, candidate_articles, max_class
     '''
     ag= ArticleGroup(keywords)
     random.shuffle(candidate_articles)
-    print candidate_articles
     length = 0
     for i in candidate_articles:
         if length == max_classes:
@@ -109,19 +108,22 @@ def create_keyword_article_group_from_sa(source_articles, max_classes,\
     have at least one keyword in common.  Should be harder to separate
     '''
 
-    candidate_articles= get_articles_with_shared_keyword(keyword)
-    article_group_from_candidates(source_articles, candidate_articles, max_classes,\
-                                  max_ex_per_class, [keyword])
+    candidate_articles= source_articles.get_articles_with_shared_keyword(keyword)
+    return article_group_from_candidates(source_articles, list(candidate_articles),\
+                                  max_classes, max_ex_per_class, [keyword])
 
-def create_all_matching_keywords_article_group_from_sa(source_articles, max_classes,\
-                                                       max_ex_per_class, article_num,):
+def create_all_matching_keywords_article_group_from_sa(source_articles,\
+                                                       max_classes,\
+                                                       max_ex_per_class,\
+                                                       article_num,):
     '''
     Most challenging option.  All articles share all keywords.  Should hopefully
     replicate a realistic situation.
     '''
 
-    candidate_articles= get_very_similar_articles(article_num)
-    article_group_from_candidates(source_articles, candidate_articles, max_classes,max_ex_per_class,\
+    candidate_articles= source_articles.get_very_similar_articles(article_num)
+    return article_group_from_candidates(source_articles, list(candidate_articles),\
+                                  max_classes,max_ex_per_class,\
                                   source_articles.get_keywords(article_num))
 
 if __name__ == "__main__":

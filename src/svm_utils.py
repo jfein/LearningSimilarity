@@ -162,7 +162,7 @@ def normalize(examples):
     normalized_examples= []
     for ex in examples:
         features= ex[1]
-        div= math.sqrt(reduce(lambda x, y: x+y[1]**2, features, 0))
+        div= math.sqrt(reduce(lambda x, y: x+y[1]**2, features, 0.0))
         normalized_features= []
         for feat in features:
             normalized_features.append((feat[0], feat[1]/div))
