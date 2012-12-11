@@ -300,6 +300,7 @@ class HMM():
             print "cosine of A2 and classified A2: {0}".format(a2_ca2)
             print "cosine of A1 and classified A2: {0}".format(a1_ca2)
             print "cosine of A2 and classified A1: {0}".format(a2_ca1)
+            print "ratio: {0}".format(((a2_ca1 / a1_ca1) + (a1_ca2 / a2_ca2)) / 2)
         return (a1_a2, ca1_ca2, a1_ca1, a2_ca2, a1_ca2, a2_ca1)
         
         
@@ -337,61 +338,27 @@ if __name__ == "__main__":
         print "USING SOURCE ARTICLE #{0} AND SOURCE ARTICLE #{1}\n".format(sa1, sa2)   
         
         #TODO: look at 202 sentence 1
-        articles_a = hmm.src_articles.spin_dissimilar_articles(sa1, 2) + hmm.src_articles.spin_dissimilar_articles(sa1, 2)
-        articles_b = hmm.src_articles.spin_dissimilar_articles(sa2, 2) + hmm.src_articles.spin_dissimilar_articles(sa2, 2)
+        articles_a = hmm.src_articles.spin_dissimilar_articles(sa1, 2)
+        articles_b = hmm.src_articles.spin_dissimilar_articles(sa2, 2)
         
         (article_a0 , classified_article_a0) = hmm.classify_article_formatted(articles_a[0])
         (article_a1 , classified_article_a1) = hmm.classify_article_formatted(articles_a[1])
-        (article_a2 , classified_article_a2) = hmm.classify_article_formatted(articles_a[2])
-        (article_a3 , classified_article_a3) = hmm.classify_article_formatted(articles_a[3])
         
         (article_b0 , classified_article_b0) = hmm.classify_article_formatted(articles_b[0])
         (article_b1 , classified_article_b1) = hmm.classify_article_formatted(articles_b[1])
-        (article_b2 , classified_article_b2) = hmm.classify_article_formatted(articles_b[2])
-        (article_b3 , classified_article_b3) = hmm.classify_article_formatted(articles_b[3])    
         
         positive = []
         negative = []
         
         print "--------------------------------------------------------------------" 
         print "--------------------------------------------------------------------" 
-        
         print "SIMILAR ARTICLES A0, A1:\n"
+        
         positive.append(hmm.get_comparison_stats(article_a0, article_a1, classified_article_a0, classified_article_a1))
-        print
-        print "SIMILAR ARTICLES A0, A2:\n"
-        positive.append(hmm.get_comparison_stats(article_a0, article_a2, classified_article_a0, classified_article_a2))
-        print
-        print "SIMILAR ARTICLES A0, A3:\n"
-        positive.append(hmm.get_comparison_stats(article_a0, article_a3, classified_article_a0, classified_article_a3))
-        print
-        print "SIMILAR ARTICLES A1, A2:\n"
-        positive.append(hmm.get_comparison_stats(article_a1, article_a2, classified_article_a1, classified_article_a2))
-        print
-        print "SIMILAR ARTICLES A1, A3:\n"
-        positive.append(hmm.get_comparison_stats(article_a1, article_a3, classified_article_a1, classified_article_a3))
-        print
-        print "SIMILAR ARTICLES A2, A3:\n"
-        positive.append(hmm.get_comparison_stats(article_a2, article_a3, classified_article_a2, classified_article_a3))
         print
         
         print "SIMILAR ARTICLES B0, B1:\n"
         positive.append(hmm.get_comparison_stats(article_b0, article_b1, classified_article_b0, classified_article_b1))
-        print
-        print "SIMILAR ARTICLES B0, B2:\n"
-        positive.append(hmm.get_comparison_stats(article_b0, article_b2, classified_article_b0, classified_article_b2))
-        print
-        print "SIMILAR ARTICLES B0, B3:\n"
-        positive.append(hmm.get_comparison_stats(article_b0, article_b3, classified_article_b0, classified_article_b3))
-        print
-        print "SIMILAR ARTICLES B1, B2:\n"
-        positive.append(hmm.get_comparison_stats(article_b1, article_b2, classified_article_b1, classified_article_b2))
-        print
-        print "SIMILAR ARTICLES B1, B3:\n"
-        positive.append(hmm.get_comparison_stats(article_b1, article_b3, classified_article_b1, classified_article_b3))
-        print
-        print "SIMILAR ARTICLES B2, B3:\n"
-        positive.append(hmm.get_comparison_stats(article_b2, article_b3, classified_article_b2, classified_article_b3))
         print
         
         print "--------------------------------------------------------------------" 
@@ -402,50 +369,12 @@ if __name__ == "__main__":
         print "NOT SIMILAR ARTICLES A0, B1:\n"
         negative.append(hmm.get_comparison_stats(article_a0, article_b1, classified_article_a0, classified_article_b1))
         print
-        print "NOT SIMILAR ARTICLES A0, B2:\n"
-        negative.append(hmm.get_comparison_stats(article_a0, article_b2, classified_article_a0, classified_article_b2))
-        print
-        print "NOT SIMILAR ARTICLES A0, B3:\n"
-        negative.append(hmm.get_comparison_stats(article_a0, article_b3, classified_article_a0, classified_article_b3))
-        print
         
         print "NOT SIMILAR ARTICLES A1, B0:\n"
         negative.append(hmm.get_comparison_stats(article_a1, article_b0, classified_article_a1, classified_article_b0))
         print
         print "NOT SIMILAR ARTICLES A1, B1:\n"
         negative.append(hmm.get_comparison_stats(article_a1, article_b1, classified_article_a1, classified_article_b1))
-        print
-        print "NOT SIMILAR ARTICLES A1, B2:\n"
-        negative.append(hmm.get_comparison_stats(article_a1, article_b2, classified_article_a1, classified_article_b2))
-        print
-        print "NOT SIMILAR ARTICLES A1, B3:\n"
-        negative.append(hmm.get_comparison_stats(article_a1, article_b3, classified_article_a1, classified_article_b3))
-        print
-        
-        print "NOT SIMILAR ARTICLES A2, B0:\n"
-        negative.append(hmm.get_comparison_stats(article_a2, article_b0, classified_article_a2, classified_article_b0))
-        print
-        print "NOT SIMILAR ARTICLES A2, B1:\n"
-        negative.append(hmm.get_comparison_stats(article_a2, article_b1, classified_article_a2, classified_article_b1))
-        print
-        print "NOT SIMILAR ARTICLES A2, B2:\n"
-        negative.append(hmm.get_comparison_stats(article_a2, article_b2, classified_article_a2, classified_article_b2))
-        print
-        print "NOT SIMILAR ARTICLES A2, B3:\n"
-        negative.append(hmm.get_comparison_stats(article_a2, article_b3, classified_article_a2, classified_article_b3))
-        print
-        
-        print "NOT SIMILAR ARTICLES A3, B0:\n"
-        negative.append(hmm.get_comparison_stats(article_a3, article_b0, classified_article_a3, classified_article_b0))
-        print
-        print "NOT SIMILAR ARTICLES A3, B1:\n"
-        negative.append(hmm.get_comparison_stats(article_a3, article_b1, classified_article_a3, classified_article_b1))
-        print
-        print "NOT SIMILAR ARTICLES A3, B2:\n"
-        negative.append(hmm.get_comparison_stats(article_a3, article_b2, classified_article_a3, classified_article_b2))
-        print
-        print "NOT SIMILAR ARTICLES A3, B3:\n"
-        negative.append(hmm.get_comparison_stats(article_a3, article_b3, classified_article_a3, classified_article_b3))
         print
         
         print "--------------------------------------------------------------------" 
