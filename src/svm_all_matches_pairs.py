@@ -27,8 +27,8 @@ def try_stuff(sa, label):
             for word in list(sa.get_keywords(i)):
                 keyword_list+= " " + word
 
-        get_results(ag, label+ , ", keywords= " + keyword_list + ", article number\
-                    =" + str(i))
+            get_results(ag, label+  ", keywords= " + keyword_list + ", article number\
+                      =" + str(i))
 
 sa= SourceArticles()
 try_stuff(sa, "No specials")
@@ -40,56 +40,56 @@ try_stuff(sa, "No stopwords")
 
 
 sa= SourceArticles(stdize_article=True)
-get_results(sa, "stdize only")
+try_stuff(sa, "stdize only")
 
 
 sa= SourceArticles(stdize_kws=True)
-get_results(sa, "kws only")
+try_stuff(sa, "kws only")
 
 
 sa= SourceArticles(replace_with_synonyms=True)
-get_results(sa, "synonyms only")
+try_stuff(sa, "synonyms only")
 
 
 sa= SourceArticles(omit_stopwords=True, stdize_article=True)
-get_results(sa, "stopwords and stdize")
+try_stuff(sa, "stopwords and stdize")
 
 
 sa= SourceArticles(omit_stopwords=True, stdize_kws=True)
-get_results(sa, "stopwords and kws")
+try_stuff(sa, "stopwords and kws")
 
 
 sa= SourceArticles(omit_stopwords=True, replace_with_synonyms=True)
-get_results(sa, "stopwords and synonyms")
+try_stuff(sa, "stopwords and synonyms")
 
 
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, stdize_kws = True, replace_with_synonyms=True)
-get_results(sa, "everything")
+try_stuff(sa, "everything")
 
 
 sa= SourceArticles(stdize_article=True, stdize_kws=True)
-get_results(sa, "stdize and kws")
+try_stuff(sa, "stdize and kws")
 
 
 sa= SourceArticles(stdize_article=True, stdize_kws=True, replace_with_synonyms=True)
-get_results(sa, "everything but stopwords")
+try_stuff(sa, "everything but stopwords")
 
 
 sa= SourceArticles(stdize_article=True, replace_with_synonyms=True)
-get_results(sa, "stdize and synonyms")
+try_stuff(sa, "stdize and synonyms")
 
 
 sa= SourceArticles(stdize_kws=True, replace_with_synonyms=True)
-get_results(sa, "kws and synonyms")
+try_stuff(sa, "kws and synonyms")
 
 
 
 sa= SourceArticles(omit_stopwords=True, stdize_kws = True, replace_with_synonyms=True)
-get_results(sa, "without stdize")
+try_stuff(sa, "without stdize")
 
 
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, replace_with_synonyms=True)
-get_results(sa, "without kws")
+try_stuff(sa, "without kws")
 
 sa= SourceArticles(omit_stopwords=True, stdize_article=True, stdize_kws = True)
-get_results(sa, "without synonyms")
+try_stuff(sa, "without synonyms")

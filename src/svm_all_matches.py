@@ -3,7 +3,7 @@ from svm_utils import subsets, five_fold_validation_check_same_source,\
 from article_group import ArticleGroup, create_all_matching_keywords_article_group_from_sa
 from util import SourceArticles
 
-value = 3
+value = 2
 thresholds= [0]
 c_values= [.001, .01, .1, 1, 5, 10]
 #c_values= [.01, .1]
