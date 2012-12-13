@@ -84,8 +84,6 @@ At it’s best, cosine similarity was able to achieve about a 96.5\% true positi
 
 
 
-\subsection{Algorithms and Methodology Overview}
-
 
 \subsection{Data Preprocessing}
 
@@ -209,8 +207,18 @@ This measure can then be placed in a binary classifier with varying thresholds t
 
 \subsection{HMM Results}
 
-%TODO
-wtf
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=1\textwidth]{hmm_ROC}
+  \caption{HMM ROC Curve}
+  \label{fig:hmm_ROC}
+\end{figure}
+
+\clearpage
+
+The above ROC graph shows results for running our HMM classification in a binary classifier on 634 total positive and 1043 total negative examples. A positive example consisted of two articles generated from the same source article and their HMM spin group classifications. A negative example consisted of two articles generated from different source articles (with the same keywords) and their HMM spin group classifications. All of these examples were drawn from odd numbered source articles, and the HMM was trained on only even numbered source articles. Because of the long running time of HMM, we could not classify both articles in all examples in our original testing set. Instead, we classified these 1677 data points chosen at randomly from our original test set. Generating an ROC graph with cosine similarity on these 1677 data points yields similar results as our baseline ROC; thus, we are confident that this small data set should appropriately show the effectiveness of our HMM-based similarity measure.
+
+At best, our HMM-based binary classifier achieves a 98% true positive rate and 1.5% false positive rate. This compares well against 96% true positive rate and 2.5% false positive rate for cosine similarity on the same data. Thus, our classification scheme is able to better discriminate if two articles are similar with a greater range of variability in the articles; it can better capture articles that have lots of words in common but are different and vica verca. Since we use cosine analysis to compare the HMM classifications, performing an HMM classification of an article is essentially adding into the article more contextual synonyms. Thus, these synonyms must be in the other article as well, and we appropriately capture this to say if the articles are similar or not.
 
 
 \subsection{Discussion}
