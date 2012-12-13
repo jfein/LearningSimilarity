@@ -31,7 +31,7 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 \fancyfoot{}
 \fancyhead{}
 \fancyfoot[CE,CO]{\thepage}
-\fancyhead[LO,LE]{Detecting Texts Copied from a Common Source\\ Toth}
+\fancyhead[LO,LE]{Detecting Texts Copied from a Common Source\\ Toth, Kiffer, Fein, Sheriff}
 
 % disables chapter, section and subsection numbering
 \setcounter{secnumdepth}{-1} 
@@ -84,7 +84,7 @@ At it’s best, cosine similarity was able to achieve about a 96.5\% true positi
 
 
 
-\subsubsection{Algorithms and Methodology Overview}
+\subsection{Algorithms and Methodology Overview}
 
 
 \subsubsection{Data Preprocessing}
@@ -100,11 +100,16 @@ Our data set of source articles is in .xml format. For use, we parse the file in
 
 Figure ~\ref{fig:filtering} shows a sample sentence (line 1) with the three techniquest applied in isolation and together. Line 2 shows the effects of stop word removal. Line 3 shows synonym replacement where a word is replaced with its most common synonym. For example, if the words “like” “love” and “adore” all appeared in the data set, each instance of “like” “love” or “adore” would be replaced with “like.” In the example of line 2, NLTK and Wordnet were used to accomplish this task for each word in each article. First, the part of speech tagger in NLTK was used to denote the part of speech for the word "handsome", adjective Next, using the WordNet database, the synonyms for all senses of "handsome" the adjective were found and put into a list. Finally, this list of synonyms was sorted by order of occurence and the most common synonym replaced the word. Line 4 shows the stemming of words which takes a word and replaces it with the stem of the word. In this case, "played" becomes "play". Line 5 shows the combination of all three techniques with stemming occuring last.
 
+In addition to filtering individual articles, we can also determine the types of articles to be used in our trianing and test sets. Since each article is denoted by a set of keywords, we can choose to use only articles that share every keyword, at least one keyword, or give no restrictions on keyword similarity.
+
+To insure that we are using similar training and test sets for all methods, we decided to train on odd numbered source articles and test on even numbered source articles.
 %TODO:
-<TALK ABOUT TRAINING AND TEST SETS (even and odd)>
+%<TALK ABOUT TRAINING AND TEST SETS (even and odd)>
 
 
 \subsubsection{SVM Approach}
+
+This supervised learning approach uses a soft margin support vector machine (SVM) to classify articles. The source articles are labeled with a unique number and this number is also given to every spun article that comes from that source. 
 
 %TODO:
 
@@ -123,17 +128,28 @@ We hypothesize that, given two articles A1 and A2, this generative model can be 
 
 \subsection{SVM Methodology}
 
-What are the criteria you are using to evaluate? How does this evaluation (e.g. experiment) relate to the questions you are trying to answer? Describe the experimental methodology that you used. What is the training/test data that was used, and why is it realistic or interesting? Exactly what performance data did you collect and how are you presenting and analyzing it? Comparisons to competing methods that address the same problem or to variations of your own algorithm are particularly useful. Give enough detail about your experiment setup so that others could reproduce the work.
+%What are the criteria you are using to evaluate? How does this evaluation (e.g. experiment) relate to the questions you are trying to answer? Describe the experimental methodology that you used. What is the training/test data that was used, and why is it realistic or interesting? Exactly what performance data did you collect and how are you presenting and analyzing it? Comparisons to competing methods that address the same problem or to variations of your own algorithm are particularly useful. Give enough detail about your experiment setup so that others could reproduce the work.
 %TODO
-<SVM METHODOLOGY AND EVALUATION CRITERIA HERE>
+%<SVM METHODOLOGY AND EVALUATION CRITERIA HERE>
+
 
 
 
 \subsection{SVM Results}
 
-Present the quantitative results of your experiments. Graphical data presentation such as graphs and histograms are frequently better than tables. Explain the basic findings by explaining the results contained in the tables and graphs.
-%TODO:
-<SVM RESULTS HERE>
+%Present the quantitative results of your experiments. Graphical data presentation such as graphs and histograms are frequently better than tables. Explain the basic findings by explaining the results contained in the tables and graphs.
+
+The results of SVM showed that filtering does improve accuracy in learning as shown in Figure ~\ref{fig:svm}. The baseline gives SVM accuracy of 66\%, but the SVM has 100\% when all filtering methods are used. The filtering techniques in rough order of efficacy are: stopwords removed, replaced synonyms, standardized articles. Standardized articles refers to stemming and lemitizing the articles. Figure ~\ref{fig:svm} shows the results for the case where the articles share every keyword.
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.75\textwidth]{svm_allmatches}
+  \caption{SVM Results Histogram}
+  \label{fig:svm}
+\end{figure}
+
+\clearpage
 
 \subsection{HMM Methodology}
 
@@ -201,18 +217,19 @@ How do the results answer your questions? What conclusions do the results suppor
 Can you say anything about related work from your background readings? It may be possible to answer the following questions for each piece of related work that addresses the same or a similar problem. What is their problem and method? How is your problem and method different? Why is your problem and method better? 
 
 \section{Future Work}
+\begin{itemize}
 
-•Use thresholding to allow for "none of the above" classification.  This would prevent a sufficiently dissimilar article from accidentally being marked as coming from the same source as another.
+\item Use thresholding to allow for "none of the above" classification.  This would prevent a sufficiently dissimilar article from accidentally being marked as coming from the same source as another.
 
-•Consider training on examples that are classified only as "same source" or "not same source".  This would attempt to learn common words that are used by the authors of spin groups.
+\item Consider training on examples that are classified only as "same source" or "not same source".  This would attempt to learn common words that are used by the authors of spin groups.
 
-•Explore using K-Mean clustering to produce K spin group clusters. Will allow to train on all data while keeping number of hidden states small.
+\item Explore using K-Mean clustering to produce K spin group clusters. Will allow to train on all data while keeping number of hidden states small.
 
-•Use our data to better estimate unigram probabilities for improved transition and emission smoothing.
+\item Use our data to better estimate unigram probabilities for improved transition and emission smoothing.
 
-•Match unseen spin groups to most similar cluster to better estimate transition probabilities.
+\item Match unseen spin groups to most similar cluster to better estimate transition probabilities.
 
-
+\end{itemize}
 What are the major shortcomings of your current method? For each shortcoming, propose additions or enhancements that would help overcome it.
 
 
