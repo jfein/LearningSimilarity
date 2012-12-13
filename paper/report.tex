@@ -87,7 +87,7 @@ At it’s best, cosine similarity was able to achieve about a 96.5\% true positi
 \subsection{Algorithms and Methodology Overview}
 
 
-\subsubsection{Data Preprocessing}
+\subsection{Data Preprocessing}
 
 Our data set of source articles is in .xml format. For use, we parse the file into Python using the open source XMLToDict Python extension. Once in Python, it is simple to filter out blank or unusable source articles (those with bad formatting or limited keyword information) and provide ways to standardize the data. These standardizations include lemmatization of words, stemming of words, removing stop words, etc. Natural Language Toolkit (NLTK) and WordNet are used to achieve these tasks as shown in Figure ~\ref{fig:filtering}.
 
@@ -107,7 +107,7 @@ To insure that we are using similar training and test sets for all methods, we d
 %<TALK ABOUT TRAINING AND TEST SETS (even and odd)>
 
 
-\subsubsection{SVM Approach}
+\subsection{SVM Approach}
 
 This supervised learning approach uses a soft margin support vector machine (SVM) to classify articles. The source articles are labeled with a unique number and this number is also given to every spun article that comes from that source. For each source article, the spun articles are relabeled as +1 if the article comes from that source or -1 if the article does not come from that source. The features for the SVM are all of the words in the English language. We used bag of words to create the feature vector for each spun article. Binary classifications are made for each source article using svmlite.
 
@@ -117,7 +117,7 @@ We hypothesize that, given two articles A1 and A3, this model can be used to det
 
 %TODO:
 
-\subsubsection{HMM Approach}
+\subsection{HMM Approach}
 
 Our generative approach aims to use a hidden markov model (HMM) to predict a hidden source article that could have generated an actual article. The intuition is that a sentence in an actual article can be modeled as a sequence of phrases that was emitted from a hidden sequence of spin groups. Each spin group in our known source articles can be modeled as a hidden state; a single hidden spin group state has equal chance to emit any of its elements. Transitions between hidden spin group states are drawn from the sequences of spin groups in the known source articles. With these transition and emission probabilities, a modified viterbi algorithm can predict a sequence of spin groups from an article. We hypothesize that this sequence of spin groups is essentially the result of adding in possible contextual synonyms to the article - just as is done when a human writes a source article from a unique one.
 
