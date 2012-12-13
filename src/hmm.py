@@ -318,7 +318,7 @@ if __name__ == "__main__":
     
     file = open("res{0}.dat".format(time.time()), 'w')
     
-    for _ in range(4):
+    for _ in range(20):
         # Want to analyze pair of very similar odd numbered source articles
         # Both articles will do generate 4 articles and do 4 classifications
         # Makes 12 positive examples and 15 negative examples
