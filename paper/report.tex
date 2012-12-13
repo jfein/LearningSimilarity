@@ -109,7 +109,11 @@ To insure that we are using similar training and test sets for all methods, we d
 
 \subsubsection{SVM Approach}
 
-This supervised learning approach uses a soft margin support vector machine (SVM) to classify articles. The source articles are labeled with a unique number and this number is also given to every spun article that comes from that source. 
+This supervised learning approach uses a soft margin support vector machine (SVM) to classify articles. The source articles are labeled with a unique number and this number is also given to every spun article that comes from that source. For each source article, the spun articles are relabeled as +1 if the article comes from that source or -1 if the article does not come from that source. The features for the SVM are all of the words in the English language. We used bag of words to create the feature vector for each spun article. Binary classifications are made for each source article using svmlite.
+
+This method has the potential to be very useful because it does not require specific knowledge about the form of the source articles.
+
+We hypothesize that, given two articles A1 and A3, this model can be used to determine if A1 and A2 came from the same article by running both articles through the SVM. If the two articles are from the source, the SVM should output the same source for both articles.
 
 %TODO:
 
@@ -210,7 +214,7 @@ wtf
 
 \subsection{Discussion}
 
-How do the results answer your questions? What conclusions do the results support about the strengths and weaknesses of your method compared to other methods? How can the results be explained in terms of the underlying properties of the algorithm and/or the data. 
+%TODO How do the results answer your questions? What conclusions do the results support about the strengths and weaknesses of your method compared to other methods? How can the results be explained in terms of the underlying properties of the algorithm and/or the data. 
 
 \section{Related Work}
 
@@ -230,7 +234,7 @@ Can you say anything about related work from your background readings? It may be
 \item Match unseen spin groups to most similar cluster to better estimate transition probabilities.
 
 \end{itemize}
-What are the major shortcomings of your current method? For each shortcoming, propose additions or enhancements that would help overcome it.
+%TODO What are the major shortcomings of your current method? For each shortcoming, propose additions or enhancements that would help overcome it.
 
 
 \section{Conclusion}
