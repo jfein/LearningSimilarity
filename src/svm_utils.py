@@ -2,6 +2,7 @@ from article_group import ArticleGroup
 import math
 import random
 import svmlight
+import os
 
 pairs_to_look_at= None
 
@@ -82,7 +83,34 @@ def find_best(c_values, threshold, train_sets, validation_sets, test_set):
     accuracy, true_plus, true_minus, false_plus, false_minus= get_accuracy_for_same_source\
             (classifications, threshold, test_set)
 
+    #write out the articles used so they can be part of the cosine baseline
+    if not os.path.exists('positives.ex'):
+        positives_file = open('positives.ex', 'w')
+        negatives_file = open('negatives.ex', 'w')
+
+        for ex in pairs_to_look_at:
+            ex0= convert_bag_of_words_to_numbers(test_set[ex[0]][1])
+            ex1= convert_bag_of_words_to_numbers(test_set[ex[1]][1])
+            if ex[2] == 1:
+                positives_file.write(ex0)
+                positives_file.write(ex1)
+            else:
+                negatives_file.write(ex0)
+                negatives_file.write(ex1)
+
+        positives_file.close()
+        negatives_file.close()
+
     return accuracy, true_plus, true_minus, false_plus, false_minus, best_c_value
+
+def convert_bag_of_words_to_numbers(bag):
+    result= ""
+    for tup in bag:
+        for _ in xrange(int(tup[1])):
+            result += str(tup[0]) + " "
+
+    result += "\n"
+    return result
 
 def get_accuracy_for_same_source(classifications, threshold, test_data):
     predictions= predictions_from_classifications(classifications, threshold)

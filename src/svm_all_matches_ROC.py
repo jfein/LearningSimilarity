@@ -1,14 +1,19 @@
+import os
 from svm_utils import subsets, five_fold_validation_check_same_source,\
         normalize, find_best, subsets
 from article_group import ArticleGroup, create_all_matching_keywords_article_group_from_sa
 from util import SourceArticles
 
 value = 2
-thresholds= [float(x) / 100 for x in xrange(0, 101, 1)]
+thresholds= [float(x) / 200 for x in xrange(170, 202, 1)]
 c_values= [.001, .01, .1, 1, 5, 10]
 #c_values= [.01, .1]
 
 def get_results(ag, label):
+    if os.path.exists('positives.ex'):
+        os.remove('positives.ex')
+        os.remove('negatives.ex')
+
     train_sets, validation_sets, test_set= subsets(ag.svm_ready_examples, 5)
     for threshold in thresholds:
         accuracy, true_plus, true_minus, false_positives, false_negatives,\
