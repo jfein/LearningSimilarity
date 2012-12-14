@@ -5,27 +5,6 @@
 
 \usepackage[margin=1in]{geometry}
 
-\usepackage{color}
-\usepackage{listings}
-\lstset{ %
-language=C,                % choose ther language of the code
-basicstyle=\footnotesize,       % the size of the fonts that are used for the code
-numbers=left,                   % where to put the line-numbers
-numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
-stepnumber=1,                   % the step between two line-numbers. If it is 1 each line will be numbered
-numbersep=5pt,                  % how far the line-numbers are from the code
-backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
-showspaces=false,               % show spaces adding particular underscores
-showstringspaces=false,         % underline spaces within strings
-showtabs=false,                 % show tabs within strings adding particular underscores
-frame=single,           % adds a frame around the code
-tabsize=2,          % sets default tabsize to 2 spaces
-captionpos=b,           % sets the caption-position to bottom
-breaklines=true,        % sets automatic line breaking
-breakatwhitespace=false,    % sets if automatic breaks should only happen at whitespace
-escapeinside={\%*}{*)}          % if you want to add a comment within your code
-}
-
 
 \pagestyle{fancy}
 \fancyfoot{}
@@ -49,15 +28,15 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 
 \section{Introduction}
 
-The internet is filled with computer generated spam content meant to game search engine results, product reviews, and spam e-mail detectors. Search engine optimization (SEO) and other spamming companies sell services to flood websites with fake content in order to falsely promote their customers. To create lots of fake content that appears to be uniquely written, companies can pay a human to write a single, unique article and then use techniques to transform, or “spin”, this article into millions of syntactically distinct but semantically identical articles. Although these articles may appear unique, they are actually inherently plagiarized. These millions of distinct articles are then posted automatically on blogs and review sites to promote or hyperlink to the SEO company's client. If the web services could detect when two pieces of content are similar, it could be deduced that they came from a common source and therefore is spam content.
+The internet is filled with computer generated spam content meant to falsify search engine results, product reviews, and spam email detectors. Shady search engine optimization (SEO) companies flood websites with fake content in order to promote their customers. To create tremendous amounts of fake content that appears to be uniquely written, companies pay a human to write a single, unique article and then use techniques to transform, or “spin”, this article into millions of syntactically distinct but semantically identical articles. Although these articles may appear unique, they are actually inherently plagiarized. These millions of distinct articles are then posted automatically on blogs and review sites to promote or hyperlink to the SEO company's client. If web services could detect whether two pieces of content come from the same source, the reliability of aggregate measures online could be greatly improved.
 
-In this paper we discuss novel methods of identifying if two articles are generated from a common source. By exploiting the methodology of the spam and SEO companies, we aim to outperform simple methods such as cosine similarity. With a dataset of “article formulas” that can be used to generate millions of articles, learning can be done to predict if two articles are unique or plagiarized. Two methods, a discriminative analysis with SVM and generative modeling using HMM, are proposed, both of which perform better than simple cosine similarity. These methods could be deployed in a large scale spam detection service.
+In this paper we discuss novel methods of identifying whether two articles are generated from a common source. By exploiting the methodology of SEO companies, we aim to outperform simple methods such as cosine similarity. With a dataset of “article formulas” that can be used to generate millions of articles, learning can be done to predict if two articles are unique or plagiarized. Two methods, a discriminative analysis with SVM and generative modeling using HMM, are proposed, both of which perform better than simple cosine similarity. These methods could be deployed in a large scale spam detection service.
 
 \section{Problem Definition and Methods}
 
 \subsection{Task Definition}
 
-Formally, our task is given a pair of articles A1 and A2, determine whether or not they are derived from a common source, or in other words if they are duplicate content. Articles A1 and A2 are considered derived from a common source article B if both A1 and A2 are semantically identical to B. This can be achieved by algorithmically replacing words in B with unique contextual synonyms to create A1 and A2. SEO and spam companies would pay a human to write the source article B, then algorithmically modify B to create millions of articles like A1 and A2. If it could be predicted that two articles A1 and A2 were generated from the unknown article B, then the spam content can be detected preemptively.
+Formally, our task is given a pair of articles A1 and A2, determine whether or not they are derived from a common source. Articles A1 and A2 are considered to be derived from a common source article B if both A1 and A2 are semantically identical to B. A1 and A2 are semantically identical if they can both be created by by algorithmically replacing words in B with contextual synonyms to create A1 and A2. These "synonyms" can be single words or groups of words. 
 
 To accomplish this task we are using a manually processed database of articles obtained from a major SEO company. These articles are of the form: ``I \{like|love\} the \{small|little|medium-sized\} \{dogs|canines\}''. A sample source article is included in Appendix A. From now on we will refer to a single group of contextually similar words/phrases such as \{really like|love|adore\} as a "spin group" and as individual members such as like, love, adore as the spin group's members or elements. Note that not all phrases that make up a spin group need to be the same size. We will also refer to articles containing these spin groups as "source articles". An actual article can be generated by selecting one spin group element from each spin group. SEO companies can generate these source articles by paying a human to write a single article, using a computer to generate these spin groups, and then having the human postprocess the article and remove any spin group elements that would not grammatical or semantical sense. Appendix B shows two example generated articles from the source article in Appendix A.
 
@@ -288,16 +267,5 @@ Should you be preparing weddings, the groom and the bridetobe will need to think
 \\
 
 Whenever organizing wedding events, the groom and also the bride have to take into consideration almost everything as a way to please every one of the people visiting. One of the several problems that usually shows up is what souvenirs to be used. Some of them are made for female visitors and not for the men. Because of this, it could be a great concept to implement koozies for wedding favors, because they are ideal for guys visitors.
-
-
-
-
-\clearpage
-
-\subsection{Code}
-
-\begin{lstlisting}
-
-\end{lstlisting}
 
 \end{document}
