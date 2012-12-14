@@ -211,7 +211,9 @@ However, we cannot say with certainity if this approach would generalize well to
 Lastly, although running time was a major problem for us, it does not rule HMM out for actual use in the industry. Our method could be parallelized extremely easily. Each sentence could be classified by a single machine, and therefore an article could be classified in a very short amount of time. Additionally this method could be used as a supplement to cosine similarity rather than a replacement. Companies could choose to only run HMM on articles that have a cosine similarity above a certain threshold.
 \section{Related Work}
 
-Can you say anything about related work from your background readings? It may be possible to answer the following questions for each piece of related work that addresses the same or a similar problem. What is their problem and method? How is your problem and method different? Why is your problem and method better? 
+%Can you say anything about related work from your background readings? It may be possible to answer the following questions for each piece of related work that addresses the same or a similar problem. What is their problem and method? How is your problem and method different? Why is your problem and method better? 
+
+Fingerprinting is the current most commonly used method of plagiarism detection. This method creates a representation of a document by creating set of n-gram phrases. The sets are refered to as the fingerprints and the phrases are called minutiae. The minutiae are checked against a known reference set to determine if the document is plagiarized or not. The number of n-grams is determined by the importance of the plagiarism detection and the time constraint. This method is not effective for data sets like ours that very phrases by logical synonyms.
 
 \section{Future Work}
 Although both our HMM and SVM implementations performed quite well, there is many areas that could be improved upon.
@@ -236,6 +238,10 @@ Additionally, an unseen spin group could be matched to the most similar seen spi
 %TODO
 
 Briefly summarize the important results and conclusions presented in the paper. What are the most important points illustrated by your work? How will your results improve future research and applications in the area?
+
+\section{References}
+
+Hoad, Timothy C., and Justin Zobel. "Methods for Identifying Versioned and Plagiarized Documents." Journal of the American Society for Information Science and Technology 54.3 (2003): 203-15. Print.
 
 \section{Appendices}
 
